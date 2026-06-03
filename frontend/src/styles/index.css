@@ -1,0 +1,211 @@
+:root {
+  color-scheme: dark;
+  --bg: #07111f;
+  --panel: #0d1b2f;
+  --panel-strong: #10243f;
+  --line: rgba(84, 176, 255, 0.22);
+  --line-strong: rgba(84, 176, 255, 0.48);
+  --text: #e7f2ff;
+  --muted: #89a5c4;
+  --primary: #2f9bff;
+  --success: #22c55e;
+  --warning: #f5b942;
+  --danger: #ff5d73;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    Inter,
+    "PingFang SC",
+    "Microsoft YaHei",
+    system-ui,
+    sans-serif;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.tech-page {
+  min-height: 100vh;
+  background:
+    linear-gradient(rgba(13, 32, 56, 0.82) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(13, 32, 56, 0.82) 1px, transparent 1px),
+    radial-gradient(circle at 18% 10%, rgba(47, 155, 255, 0.24), transparent 34%),
+    radial-gradient(circle at 82% 20%, rgba(34, 197, 94, 0.12), transparent 30%),
+    #07111f;
+  background-size:
+    32px 32px,
+    32px 32px,
+    auto,
+    auto,
+    auto;
+}
+
+.panel {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(16, 36, 63, 0.94), rgba(8, 20, 36, 0.94));
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.24);
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 38px;
+  padding: 0 2px 12px;
+  color: #d8edff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.panel-title::before {
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--primary);
+  content: "";
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+}
+
+.status-dot.warning {
+  background: var(--warning);
+}
+
+.status-dot.danger {
+  background: var(--danger);
+}
+
+.el-menu {
+  border-right: 0;
+}
+
+.el-button,
+.el-input__wrapper,
+.el-select__wrapper {
+  border-radius: 6px;
+}
+
+.management-page {
+  min-height: calc(100vh - 126px);
+  padding: 18px;
+}
+
+.management-page .toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.management-page .toolbar p {
+  margin: -4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.management-page .actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  max-width: 920px;
+}
+
+.management-page .actions .el-input {
+  width: 240px;
+}
+
+.management-page .actions .el-select {
+  width: 156px;
+}
+
+.management-page .data-table {
+  border: 1px solid rgba(84, 176, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(8, 20, 36, 0.72);
+}
+
+.management-page .pager {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 16px;
+}
+
+.management-page .form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 14px;
+}
+
+.el-table {
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  --el-table-header-bg-color: rgba(14, 39, 68, 0.96);
+  --el-table-header-text-color: #d8edff;
+  --el-table-text-color: var(--text);
+  --el-table-row-hover-bg-color: rgba(47, 155, 255, 0.12);
+  --el-table-border-color: rgba(84, 176, 255, 0.12);
+}
+
+.el-dialog {
+  --el-dialog-bg-color: #0d1b2f;
+  --el-dialog-title-font-size: 18px;
+  border: 1px solid var(--line);
+}
+
+.el-dialog__title,
+.el-form-item__label {
+  color: var(--text);
+}
+
+@media (max-width: 900px) {
+  .management-page .toolbar {
+    flex-direction: column;
+  }
+
+  .management-page .actions {
+    justify-content: stretch;
+    width: 100%;
+  }
+
+  .management-page .actions .el-input,
+  .management-page .actions .el-select {
+    width: 100%;
+  }
+
+  .management-page .form-grid {
+    grid-template-columns: 1fr;
+  }
+}

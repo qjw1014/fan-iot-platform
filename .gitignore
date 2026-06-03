@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+
+target/
+node_modules/
+dist/
+coverage/
+
+.idea/
+.vscode/
+*.log
+
+postgres_data/
+redis_data/
+mqtt_data/
+mqtt_log/

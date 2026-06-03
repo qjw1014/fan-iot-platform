@@ -1,0 +1,68 @@
+package com.faniot.platform.gateway.vo;
+
+import com.faniot.platform.gateway.domain.Gateway;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+
+@Schema(description = "盒子信息")
+public record GatewayVO(
+        Long id,
+        String gatewayId,
+        String gatewaySn,
+        String gatewayName,
+        String gatewayModel,
+        String imei,
+        String simCardNo,
+        String customerId,
+        String customerName,
+        String projectId,
+        String projectName,
+        String activationStatus,
+        String onlineStatus,
+        String mqttUsername,
+        String firmwareVersion,
+        BigDecimal latitude,
+        BigDecimal longitude,
+        String address,
+        String province,
+        String city,
+        String district,
+        OffsetDateTime locationUpdatedAt,
+        OffsetDateTime lastSeenAt,
+        String remark,
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt
+) {
+    public static GatewayVO from(Gateway gateway, String customerName, String projectName) {
+        return new GatewayVO(
+                gateway.getId(),
+                gateway.getGatewayId(),
+                gateway.getGatewaySn(),
+                gateway.getGatewayName(),
+                gateway.getGatewayModel(),
+                gateway.getImei(),
+                gateway.getSimCardNo(),
+                gateway.getCustomerId(),
+                customerName,
+                gateway.getProjectId(),
+                projectName,
+                gateway.getActivationStatus(),
+                gateway.getOnlineStatus(),
+                gateway.getMqttUsername(),
+                gateway.getFirmwareVersion(),
+                gateway.getLatitude(),
+                gateway.getLongitude(),
+                gateway.getAddress(),
+                gateway.getProvince(),
+                gateway.getCity(),
+                gateway.getDistrict(),
+                gateway.getLocationUpdatedAt(),
+                gateway.getLastSeenAt(),
+                gateway.getRemark(),
+                gateway.getCreatedAt(),
+                gateway.getUpdatedAt()
+        );
+    }
+}
