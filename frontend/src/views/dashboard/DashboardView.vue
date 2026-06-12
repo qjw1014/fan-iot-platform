@@ -2,12 +2,13 @@
   <div class="dashboard">
     <section class="panel map-panel">
       <div class="panel-title">设备地图</div>
-      <div class="map-canvas">
+      <div v-if="mapDevices.length" class="map-canvas">
         <div v-for="device in mapDevices" :key="device.deviceId" class="map-point" :class="device.status" :style="pointStyle(device)">
           <span></span>
           <em>{{ device.deviceName }}</em>
         </div>
       </div>
+      <el-empty v-else description="暂无真实定位坐标，请在设备管理中维护位置" />
       <div class="map-legend">
         <span><i class="online"></i>在线设备 {{ statusCount.online }}</span>
         <span><i class="offline"></i>离线设备 {{ statusCount.offline }}</span>
@@ -44,7 +45,9 @@ import type { Device } from '@/types/business'
 use([CanvasRenderer, BarChart, GridComponent, TooltipComponent, LegendComponent])
 
 const devices = ref<Device[]>([])
-const mapDevices = computed(() => devices.value.slice(0, 12))
+const mapDevices = computed(() => devices.value
+  .filter((item) => item.longitude != null && item.latitude != null)
+  .slice(0, 12))
 const statusCount = computed(() => ({
   online: devices.value.filter((item) => item.status === 'online').length,
   offline: devices.value.filter((item) => item.status === 'offline').length,
@@ -66,8 +69,8 @@ function statusLabel(value: string) {
 }
 
 function pointStyle(device: Device) {
-  const longitude = Number(device.longitude ?? 104 + (device.id % 10))
-  const latitude = Number(device.latitude ?? 30 + (device.id % 8))
+  const longitude = Number(device.longitude)
+  const latitude = Number(device.latitude)
   return {
     left: `${Math.min(88, Math.max(8, ((longitude + 180) / 360) * 100))}%`,
     top: `${Math.min(84, Math.max(12, (1 - (latitude + 90) / 180) * 100))}%`

@@ -16,8 +16,12 @@ $projectId = "PROJ-DEMO"
 $gatewayId = "BOX001"
 $gatewaySn = "BOX001-SN"
 $deviceId = "FAN001"
+$imei = "860061060041515"
+$iccid = "89860620220031659407"
 $mqttUsername = "box001"
 $mqttPassword = "box001_password"
+$publishTopic = "iot/d200/$gatewaySn/up"
+$subscribeTopic = "iot/d200/$gatewaySn/down"
 
 function Invoke-Json {
     param(
@@ -98,6 +102,30 @@ function New-Payload {
     }
 }
 
+function New-D200Payload {
+    param([int]$Index)
+    $point = New-Point -Index $Index
+    return @{
+        imei = $imei
+        iccid = $iccid
+        time = [int][DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+        data = @{
+            rpm = $point.rpm
+            current = $point.current
+            voltage = $point.voltage
+            power = $point.power
+            frequency = $point.frequency
+            pressure = $point.pressure
+            airflow = $point.airflow
+            motorTemperature = $point.motor_temperature
+            bearingTemperature = $point.bearing_temperature
+            vibration = $point.vibration
+            status = $point.status
+            alarmCode = $point.alarm_code
+        }
+    }
+}
+
 Write-Host "Login and prepare BOX001/FAN001 demo records..."
 $login = Invoke-Json POST "$BaseUrl/api/auth/login" $null @{
     username = $AdminUsername
@@ -125,7 +153,18 @@ Try-Step { Invoke-Json POST "$BaseUrl/api/gateways" $token @{
     gatewayId = $gatewayId
     gatewaySn = $gatewaySn
     gatewayName = "Demo Gateway BOX001"
-    gatewayModel = "SIM-BOX"
+    gatewayModel = "D200"
+    imei = $imei
+    iccid = $iccid
+    mqttClientId = $gatewaySn
+    mqttUsername = $mqttUsername
+    publishTopic = $publishTopic
+    subscribeTopic = $subscribeTopic
+    mqttVersion = "3.1.1"
+    qos = 1
+    keepalive = 60
+    tlsEnabled = $false
+    remoteConfigSupported = $true
     customerId = $customerId
     projectId = $projectId
     activationStatus = "inactive"
@@ -159,7 +198,7 @@ Invoke-Json POST "$BaseUrl/api/iot/gateway/activate" $null @{
     mqtt_password = $mqttPassword
 } | Out-Null
 
-Write-Host "Ready: gatewayId=$gatewayId deviceId=$deviceId topic=iot/gateway/$gatewayId/telemetry"
+Write-Host "Ready: gatewayId=$gatewayId gatewaySn=$gatewaySn deviceId=$deviceId topic=$publishTopic"
 Write-Host "Mode=$Mode IntervalSeconds=$IntervalSeconds Iterations=$Iterations"
 Write-Host "Open /monitor for realtime data and /history for FAN001 curves. Press Ctrl+C to stop."
 
@@ -175,9 +214,10 @@ while ($true) {
         Write-Host "[$(Get-Date -Format 'HH:mm:ss')] HTTP ok rpm=$($point.rpm) temp=$($point.motor_temperature) vib=$($point.vibration) status=$($point.status) saved=$($result.data.saved_count)"
     }
     if ($Mode -eq "Mqtt" -or $Mode -eq "Both") {
-        $json = $payload | ConvertTo-Json -Depth 20 -Compress
-        $json | docker exec -i $MqttContainer mosquitto_pub -h localhost -p 1883 -t "iot/gateway/$gatewayId/telemetry" -l
-        Write-Host "[$(Get-Date -Format 'HH:mm:ss')] MQTT ok topic=iot/gateway/$gatewayId/telemetry rpm=$($point.rpm) temp=$($point.motor_temperature) vib=$($point.vibration) status=$($point.status)"
+        $d200Payload = New-D200Payload -Index $index
+        $json = $d200Payload | ConvertTo-Json -Depth 20 -Compress
+        $json | docker exec -i $MqttContainer mosquitto_pub -h localhost -p 1883 -t $publishTopic -l
+        Write-Host "[$(Get-Date -Format 'HH:mm:ss')] MQTT D200 ok topic=$publishTopic rpm=$($point.rpm) temp=$($point.motor_temperature) vib=$($point.vibration) status=$($point.status)"
     }
     $index++
     Start-Sleep -Seconds $IntervalSeconds

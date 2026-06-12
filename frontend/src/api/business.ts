@@ -5,9 +5,13 @@ import type {
   AiHistory,
   AiRealtime,
   Customer,
+  D200ConfigTask,
+  D200FieldMapping,
+  D200RawPayload,
   Device,
   DeviceLocation,
   Gateway,
+  LbsLocationResult,
   PageResponse,
   Project,
   RealtimeMetric,
@@ -119,4 +123,27 @@ export const userApi = {
 export const systemLogApi = {
   page: (params: PageQuery & { logLevel?: string; module?: string }) =>
     getData(request.get<ApiResponse<PageResponse<SystemLog>>>('/api/system/logs', { params: cleanParams(params) }))
+}
+
+export const d200Api = {
+  rawPayloads: (params: PageQuery & { gatewaySn?: string; processed?: boolean }) =>
+    getData(request.get<ApiResponse<PageResponse<D200RawPayload>>>('/api/d200/raw-payloads', { params: cleanParams(params) })),
+  mappings: (params: PageQuery) =>
+    getData(request.get<ApiResponse<PageResponse<D200FieldMapping>>>('/api/d200/field-mappings', { params: cleanParams(params) })),
+  createMapping: (data: Partial<D200FieldMapping>) =>
+    getData(request.post<ApiResponse<D200FieldMapping>>('/api/d200/field-mappings', data)),
+  updateMapping: (id: number, data: Partial<D200FieldMapping>) =>
+    getData(request.put<ApiResponse<D200FieldMapping>>(`/api/d200/field-mappings/${id}`, data)),
+  removeMapping: (id: number) => getData(request.delete<ApiResponse<void>>(`/api/d200/field-mappings/${id}`)),
+  configTasks: (params: PageQuery & { gatewaySn?: string; status?: string }) =>
+    getData(request.get<ApiResponse<PageResponse<D200ConfigTask>>>('/api/d200/config-tasks', { params: cleanParams(params) })),
+  createConfigTask: (data: Partial<D200ConfigTask>) =>
+    getData(request.post<ApiResponse<D200ConfigTask>>('/api/d200/config-tasks', data)),
+  markConfigTask: (id: number, status: string, errorMessage = '') =>
+    getData(request.post<ApiResponse<void>>(`/api/d200/config-tasks/${id}/status`, null, { params: cleanParams({ status, errorMessage }) }))
+}
+
+export const lbsApi = {
+  locate: (data: { gatewaySn?: string; imei?: string; mcc?: number; mnc?: number; lac: number; cid: number }) =>
+    getData(request.post<ApiResponse<LbsLocationResult>>('/api/iot/location/lbs', data))
 }

@@ -36,6 +36,7 @@ export interface Gateway {
   gatewayName: string
   gatewayModel?: string
   imei?: string
+  iccid?: string
   simCardNo?: string
   customerId?: string
   customerName?: string
@@ -43,8 +44,17 @@ export interface Gateway {
   projectName?: string
   activationStatus: string
   onlineStatus: string
+  mqttClientId?: string
   mqttUsername?: string
   mqttPassword?: string
+  publishTopic?: string
+  subscribeTopic?: string
+  mqttVersion?: string
+  qos?: number
+  keepalive?: number
+  tlsEnabled?: boolean
+  remoteConfigSupported?: boolean
+  lastConfigTime?: string
   firmwareVersion?: string
   latitude?: number
   longitude?: number
@@ -52,6 +62,13 @@ export interface Gateway {
   province?: string
   city?: string
   district?: string
+  locationSource?: string
+  lastLocationTime?: string
+  lbsMcc?: number
+  lbsMnc?: number
+  lbsLac?: number
+  lbsCid?: number
+  lbsAccuracy?: number
   locationUpdatedAt?: string
   lastSeenAt?: string
   remark?: string
@@ -63,6 +80,7 @@ export interface Device {
   id: number
   deviceId: string
   gatewayId: string
+  gatewaySn?: string
   gatewayName?: string
   customerId?: string
   customerName?: string
@@ -74,6 +92,8 @@ export interface Device {
   latitude?: number
   longitude?: number
   address?: string
+  locationSource?: 'manual' | 'lbs'
+  lastLocationTime?: string
   status: string
   lastSeenAt?: string
   remark?: string
@@ -85,12 +105,15 @@ export interface DeviceLocation {
   deviceId: string
   deviceName: string
   gatewayId: string
+  gatewaySn?: string
   customerId?: string
   projectId?: string
   installLocation?: string
   latitude?: number
   longitude?: number
   address?: string
+  locationSource?: 'manual' | 'lbs'
+  lastLocationTime?: string
 }
 
 export interface AiDeviceMeta {
@@ -206,4 +229,63 @@ export interface SystemLog {
   message: string
   userId?: number
   createdAt?: string
+}
+
+export interface D200RawPayload {
+  id: number
+  gatewayId?: string
+  gatewaySn?: string
+  topic: string
+  qos?: number
+  imei?: string
+  iccid?: string
+  deviceTime?: string
+  receivedAt: string
+  rawPayload: unknown
+  dataPayload?: unknown
+  processed: boolean
+  processError?: string
+}
+
+export interface D200FieldMapping {
+  id: number
+  gatewayId: string
+  deviceId: string
+  sourceKey: string
+  targetField: string
+  scaleFactor: number
+  offsetValue: number
+  unit?: string
+  enabled: boolean
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface D200ConfigTask {
+  id: number
+  gatewayId: string
+  gatewaySn: string
+  taskType: string
+  configPayload: unknown
+  status: string
+  sentAt?: string
+  completedAt?: string
+  errorMessage?: string
+  createdAt?: string
+}
+
+export interface LbsLocationResult {
+  gatewayId: string
+  gatewaySn: string
+  mcc: number
+  mnc: number
+  lac: number
+  cid: number
+  latitude: number
+  longitude: number
+  accuracy?: number
+  address?: string
+  locationSource: 'lbs'
+  gatewayLocationUpdated: boolean
+  locatedAt: string
 }

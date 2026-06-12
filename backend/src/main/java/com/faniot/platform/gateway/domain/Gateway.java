@@ -35,6 +35,9 @@ public class Gateway {
     @Column(length = 32)
     private String imei;
 
+    @Column(length = 32)
+    private String iccid;
+
     @Column(name = "sim_card_no", length = 32)
     private String simCardNo;
 
@@ -50,8 +53,29 @@ public class Gateway {
     @Column(name = "mqtt_username", length = 120)
     private String mqttUsername;
 
+    @Column(name = "mqtt_client_id", length = 96)
+    private String mqttClientId;
+
     @Column(name = "mqtt_password_hash")
     private String mqttPasswordHash;
+
+    @Column(name = "publish_topic", length = 128)
+    private String publishTopic;
+
+    @Column(name = "subscribe_topic", length = 128)
+    private String subscribeTopic;
+
+    @Column(name = "mqtt_version", nullable = false, length = 16)
+    private String mqttVersion = "3.1.1";
+
+    @Column(nullable = false)
+    private Integer qos = 1;
+
+    @Column(nullable = false)
+    private Integer keepalive = 60;
+
+    @Column(name = "tls_enabled", nullable = false)
+    private Boolean tlsEnabled = false;
 
     @Column(name = "online_status", nullable = false, length = 32)
     private String onlineStatus = "offline";
@@ -61,6 +85,12 @@ public class Gateway {
 
     @Column(name = "last_seen_at")
     private OffsetDateTime lastSeenAt;
+
+    @Column(name = "last_config_time")
+    private OffsetDateTime lastConfigTime;
+
+    @Column(name = "remote_config_supported", nullable = false)
+    private Boolean remoteConfigSupported = true;
 
     @Column(precision = 10, scale = 7)
     private BigDecimal latitude;
@@ -82,6 +112,27 @@ public class Gateway {
 
     @Column(name = "location_updated_at")
     private OffsetDateTime locationUpdatedAt;
+
+    @Column(name = "location_source", nullable = false, length = 16)
+    private String locationSource = "manual";
+
+    @Column(name = "last_location_time")
+    private OffsetDateTime lastLocationTime;
+
+    @Column(name = "lbs_mcc")
+    private Integer lbsMcc;
+
+    @Column(name = "lbs_mnc")
+    private Integer lbsMnc;
+
+    @Column(name = "lbs_lac")
+    private Long lbsLac;
+
+    @Column(name = "lbs_cid")
+    private Long lbsCid;
+
+    @Column(name = "lbs_accuracy")
+    private Integer lbsAccuracy;
 
     @Column(length = 500)
     private String remark;
@@ -148,6 +199,14 @@ public class Gateway {
         this.imei = imei;
     }
 
+    public String getIccid() {
+        return iccid;
+    }
+
+    public void setIccid(String iccid) {
+        this.iccid = iccid;
+    }
+
     public String getSimCardNo() {
         return simCardNo;
     }
@@ -188,12 +247,68 @@ public class Gateway {
         this.mqttUsername = mqttUsername;
     }
 
+    public String getMqttClientId() {
+        return mqttClientId;
+    }
+
+    public void setMqttClientId(String mqttClientId) {
+        this.mqttClientId = mqttClientId;
+    }
+
     public String getMqttPasswordHash() {
         return mqttPasswordHash;
     }
 
     public void setMqttPasswordHash(String mqttPasswordHash) {
         this.mqttPasswordHash = mqttPasswordHash;
+    }
+
+    public String getPublishTopic() {
+        return publishTopic;
+    }
+
+    public void setPublishTopic(String publishTopic) {
+        this.publishTopic = publishTopic;
+    }
+
+    public String getSubscribeTopic() {
+        return subscribeTopic;
+    }
+
+    public void setSubscribeTopic(String subscribeTopic) {
+        this.subscribeTopic = subscribeTopic;
+    }
+
+    public String getMqttVersion() {
+        return mqttVersion;
+    }
+
+    public void setMqttVersion(String mqttVersion) {
+        this.mqttVersion = mqttVersion;
+    }
+
+    public Integer getQos() {
+        return qos;
+    }
+
+    public void setQos(Integer qos) {
+        this.qos = qos;
+    }
+
+    public Integer getKeepalive() {
+        return keepalive;
+    }
+
+    public void setKeepalive(Integer keepalive) {
+        this.keepalive = keepalive;
+    }
+
+    public Boolean getTlsEnabled() {
+        return tlsEnabled;
+    }
+
+    public void setTlsEnabled(Boolean tlsEnabled) {
+        this.tlsEnabled = tlsEnabled;
     }
 
     public String getOnlineStatus() {
@@ -218,6 +333,22 @@ public class Gateway {
 
     public void setLastSeenAt(OffsetDateTime lastSeenAt) {
         this.lastSeenAt = lastSeenAt;
+    }
+
+    public OffsetDateTime getLastConfigTime() {
+        return lastConfigTime;
+    }
+
+    public void setLastConfigTime(OffsetDateTime lastConfigTime) {
+        this.lastConfigTime = lastConfigTime;
+    }
+
+    public Boolean getRemoteConfigSupported() {
+        return remoteConfigSupported;
+    }
+
+    public void setRemoteConfigSupported(Boolean remoteConfigSupported) {
+        this.remoteConfigSupported = remoteConfigSupported;
     }
 
     public BigDecimal getLatitude() {
@@ -274,6 +405,62 @@ public class Gateway {
 
     public void setLocationUpdatedAt(OffsetDateTime locationUpdatedAt) {
         this.locationUpdatedAt = locationUpdatedAt;
+    }
+
+    public String getLocationSource() {
+        return locationSource;
+    }
+
+    public void setLocationSource(String locationSource) {
+        this.locationSource = locationSource;
+    }
+
+    public OffsetDateTime getLastLocationTime() {
+        return lastLocationTime;
+    }
+
+    public void setLastLocationTime(OffsetDateTime lastLocationTime) {
+        this.lastLocationTime = lastLocationTime;
+    }
+
+    public Integer getLbsMcc() {
+        return lbsMcc;
+    }
+
+    public void setLbsMcc(Integer lbsMcc) {
+        this.lbsMcc = lbsMcc;
+    }
+
+    public Integer getLbsMnc() {
+        return lbsMnc;
+    }
+
+    public void setLbsMnc(Integer lbsMnc) {
+        this.lbsMnc = lbsMnc;
+    }
+
+    public Long getLbsLac() {
+        return lbsLac;
+    }
+
+    public void setLbsLac(Long lbsLac) {
+        this.lbsLac = lbsLac;
+    }
+
+    public Long getLbsCid() {
+        return lbsCid;
+    }
+
+    public void setLbsCid(Long lbsCid) {
+        this.lbsCid = lbsCid;
+    }
+
+    public Integer getLbsAccuracy() {
+        return lbsAccuracy;
+    }
+
+    public void setLbsAccuracy(Integer lbsAccuracy) {
+        this.lbsAccuracy = lbsAccuracy;
     }
 
     public String getRemark() {

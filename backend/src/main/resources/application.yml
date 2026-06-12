@@ -61,7 +61,21 @@ app:
     client-id: ${MQTT_CLIENT_ID:fan-iot-platform-backend}
     username: ${MQTT_USERNAME:}
     password: ${MQTT_PASSWORD:}
-    telemetry-topic: ${MQTT_TELEMETRY_TOPIC:iot/gateway/+/telemetry}
+    telemetry-topic: ${MQTT_TELEMETRY_TOPIC:iot/d200/+/up}
+  communication:
+    offline-timeout-seconds: ${COMMUNICATION_OFFLINE_TIMEOUT_SECONDS:180}
+    status-check-interval-ms: ${COMMUNICATION_STATUS_CHECK_INTERVAL_MS:30000}
+  lbs:
+    enabled: ${LBS_ENABLED:false}
+    provider: ${LBS_PROVIDER:cellocation}
+    base-url: ${LBS_BASE_URL:http://api.cellocation.com:84/cell/}
+    api-key: ${LBS_API_KEY:}
+    default-mcc: ${LBS_DEFAULT_MCC:460}
+    default-mnc: ${LBS_DEFAULT_MNC:}
+    network: ${LBS_NETWORK:GSM}
+    signal: ${LBS_SIGNAL:-99}
+    connect-timeout-seconds: ${LBS_CONNECT_TIMEOUT_SECONDS:5}
+    read-timeout-seconds: ${LBS_READ_TIMEOUT_SECONDS:8}
 
 logging:
   level:

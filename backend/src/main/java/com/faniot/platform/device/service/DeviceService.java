@@ -67,7 +67,17 @@ public class DeviceService {
 
     @Transactional(readOnly = true)
     public DeviceLocationVO location(String deviceId) {
-        return DeviceLocationVO.from(getByDeviceId(deviceId));
+        Device device = getByDeviceId(deviceId);
+        Gateway gateway = gatewayRepository.findByGatewayId(device.getGatewayId()).orElse(null);
+        EffectiveLocation location = effectiveLocation(device, gateway);
+        return DeviceLocationVO.from(
+                device,
+                location.latitude(),
+                location.longitude(),
+                location.address(),
+                location.source(),
+                location.lastLocationTime()
+        );
     }
 
     @Transactional
@@ -77,7 +87,15 @@ public class DeviceService {
         device.setLatitude(request.latitude());
         device.setLongitude(request.longitude());
         device.setAddress(request.address());
-        return DeviceLocationVO.from(deviceRepository.save(device));
+        Device saved = deviceRepository.save(device);
+        return DeviceLocationVO.from(
+                saved,
+                saved.getLatitude(),
+                saved.getLongitude(),
+                saved.getAddress(),
+                "manual",
+                saved.getUpdatedAt()
+        );
     }
 
     @Transactional
@@ -159,14 +177,59 @@ public class DeviceService {
     }
 
     private DeviceVO toVO(Device device) {
-        String gatewayName = gatewayRepository.findByGatewayId(device.getGatewayId()).map(Gateway::getGatewayName).orElse(null);
+        Gateway gateway = gatewayRepository.findByGatewayId(device.getGatewayId()).orElse(null);
+        String gatewayName = gateway == null ? null : gateway.getGatewayName();
+        String gatewaySn = gateway == null ? null : gateway.getGatewaySn();
         String customerName = StringUtils.hasText(device.getCustomerId())
                 ? customerRepository.findByCustomerId(device.getCustomerId()).map(Customer::getCustomerName).orElse(null)
                 : null;
         String projectName = StringUtils.hasText(device.getProjectId())
                 ? projectRepository.findByProjectId(device.getProjectId()).map(Project::getProjectName).orElse(null)
                 : null;
-        return DeviceVO.from(device, gatewayName, customerName, projectName);
+        EffectiveLocation location = effectiveLocation(device, gateway);
+        return DeviceVO.from(
+                device,
+                gatewaySn,
+                gatewayName,
+                customerName,
+                projectName,
+                location.latitude(),
+                location.longitude(),
+                location.address(),
+                location.source(),
+                location.lastLocationTime()
+        );
+    }
+
+    private EffectiveLocation effectiveLocation(Device device, Gateway gateway) {
+        if (device.getLatitude() != null && device.getLongitude() != null) {
+            return new EffectiveLocation(
+                    device.getLatitude(),
+                    device.getLongitude(),
+                    device.getAddress(),
+                    "manual",
+                    device.getUpdatedAt()
+            );
+        }
+        if (gateway != null && gateway.getLatitude() != null && gateway.getLongitude() != null) {
+            return new EffectiveLocation(
+                    gateway.getLatitude(),
+                    gateway.getLongitude(),
+                    gateway.getAddress(),
+                    gateway.getLocationSource(),
+                    gateway.getLastLocationTime()
+            );
+        }
+        return new EffectiveLocation(null, null, device.getAddress(), null, null);
+    }
+
+    private record EffectiveLocation(
+            java.math.BigDecimal latitude,
+            java.math.BigDecimal longitude,
+            String address,
+            String source,
+            java.time.OffsetDateTime lastLocationTime
+    ) {
     }
 
     private String blankToNull(String value) {

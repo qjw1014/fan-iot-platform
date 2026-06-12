@@ -50,11 +50,11 @@ public class AiOpenApiService {
 
     public byte[] toCsv(AiHistoryVO history) {
         StringBuilder builder = new StringBuilder();
-        builder.append("deviceId,deviceName,gatewayId,customerName,projectName,latitude,longitude,address,timestamp,rpm,current,voltage,power,motorTemperature,bearingTemperature,vibration\n");
+        builder.append("deviceId,deviceName,gatewaySn,customerName,projectName,latitude,longitude,address,timestamp,rpm,current,voltage,power,motorTemperature,bearingTemperature,vibration\n");
         for (TelemetryHistoryPointVO point : history.records()) {
             builder.append(csv(history.device().deviceId())).append(',')
                     .append(csv(history.device().deviceName())).append(',')
-                    .append(csv(history.device().gatewayId())).append(',')
+                    .append(csv(history.device().gatewaySn())).append(',')
                     .append(csv(history.device().customerName())).append(',')
                     .append(csv(history.device().projectName())).append(',')
                     .append(value(history.device().latitude())).append(',')

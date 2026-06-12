@@ -1,9 +1,7 @@
 package com.faniot.platform.iot.mqtt;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.faniot.platform.d200.service.D200AdapterService;
 import com.faniot.platform.iot.config.MqttProperties;
-import com.faniot.platform.iot.dto.TelemetryUploadRequest;
-import com.faniot.platform.iot.service.IotIngestionService;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -25,19 +23,13 @@ public class MqttTelemetrySubscriber implements SmartLifecycle {
     private static final Logger log = LoggerFactory.getLogger(MqttTelemetrySubscriber.class);
 
     private final MqttProperties properties;
-    private final ObjectMapper objectMapper;
-    private final IotIngestionService iotIngestionService;
+    private final D200AdapterService d200AdapterService;
     private volatile boolean running;
     private MqttClient client;
 
-    public MqttTelemetrySubscriber(
-            MqttProperties properties,
-            ObjectMapper objectMapper,
-            IotIngestionService iotIngestionService
-    ) {
+    public MqttTelemetrySubscriber(MqttProperties properties, D200AdapterService d200AdapterService) {
         this.properties = properties;
-        this.objectMapper = objectMapper;
-        this.iotIngestionService = iotIngestionService;
+        this.d200AdapterService = d200AdapterService;
     }
 
     @Override
@@ -114,7 +106,7 @@ public class MqttTelemetrySubscriber implements SmartLifecycle {
     private void subscribe() {
         try {
             client.subscribe(properties.getTelemetryTopic(), 1);
-            log.info("MQTT已订阅遥测主题：{}", properties.getTelemetryTopic());
+            log.info("MQTT已订阅D200上行主题：{}", properties.getTelemetryTopic());
         } catch (MqttException ex) {
             log.error("MQTT订阅失败", ex);
         }
@@ -123,19 +115,10 @@ public class MqttTelemetrySubscriber implements SmartLifecycle {
     private void handleMessage(String topic, MqttMessage message) {
         try {
             String payload = new String(message.getPayload(), StandardCharsets.UTF_8);
-            TelemetryUploadRequest request = objectMapper.readValue(payload, TelemetryUploadRequest.class);
-            iotIngestionService.ingestTelemetry(request, extractGatewayId(topic));
-            log.debug("MQTT遥测入库成功 topic={}", topic);
+            d200AdapterService.ingestMqtt(topic, message.getQos(), payload);
+            log.debug("D200 MQTT消息处理完成 topic={}", topic);
         } catch (Exception ex) {
-            log.error("MQTT遥测消息处理失败 topic={}", topic, ex);
+            log.error("D200 MQTT消息处理失败 topic={}", topic, ex);
         }
-    }
-
-    private String extractGatewayId(String topic) {
-        String[] parts = topic.split("/");
-        if (parts.length >= 3 && "iot".equals(parts[0]) && "gateway".equals(parts[1])) {
-            return parts[2];
-        }
-        return null;
     }
 }

@@ -4,6 +4,7 @@ import com.faniot.platform.device.domain.Device;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 
 @Schema(description = "设备定位信息")
 public record DeviceLocationVO(
@@ -15,9 +16,18 @@ public record DeviceLocationVO(
         String installLocation,
         BigDecimal latitude,
         BigDecimal longitude,
-        String address
+        String address,
+        String locationSource,
+        OffsetDateTime lastLocationTime
 ) {
-    public static DeviceLocationVO from(Device device) {
+    public static DeviceLocationVO from(
+            Device device,
+            BigDecimal latitude,
+            BigDecimal longitude,
+            String address,
+            String locationSource,
+            OffsetDateTime lastLocationTime
+    ) {
         return new DeviceLocationVO(
                 device.getDeviceId(),
                 device.getDeviceName(),
@@ -25,9 +35,11 @@ public record DeviceLocationVO(
                 device.getCustomerId(),
                 device.getProjectId(),
                 device.getInstallLocation(),
-                device.getLatitude(),
-                device.getLongitude(),
-                device.getAddress()
+                latitude,
+                longitude,
+                address,
+                locationSource,
+                lastLocationTime
         );
     }
 }

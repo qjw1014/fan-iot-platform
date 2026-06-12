@@ -116,17 +116,28 @@ public class GatewayService {
         gateway.setGatewayId(request.gatewayId());
         gateway.setGatewaySn(request.gatewaySn());
         gateway.setGatewayName(request.gatewayName());
-        gateway.setGatewayModel(request.gatewayModel());
+        gateway.setGatewayModel(StringUtils.hasText(request.gatewayModel()) ? request.gatewayModel() : "D200");
         gateway.setImei(request.imei());
+        gateway.setIccid(request.iccid());
         gateway.setSimCardNo(request.simCardNo());
         gateway.setCustomerId(blankToNull(request.customerId()));
         gateway.setProjectId(blankToNull(request.projectId()));
         gateway.setActivationStatus(StringUtils.hasText(request.activationStatus()) ? request.activationStatus() : "inactive");
-        gateway.setOnlineStatus(StringUtils.hasText(request.onlineStatus()) ? request.onlineStatus() : "offline");
+        if (gateway.getId() == null) {
+            gateway.setOnlineStatus("offline");
+        }
+        gateway.setMqttClientId(StringUtils.hasText(request.mqttClientId()) ? request.mqttClientId() : request.gatewaySn());
         gateway.setMqttUsername(blankToNull(request.mqttUsername()));
         if (StringUtils.hasText(request.mqttPassword())) {
             gateway.setMqttPasswordHash(passwordEncoder.encode(request.mqttPassword()));
         }
+        gateway.setPublishTopic(StringUtils.hasText(request.publishTopic()) ? request.publishTopic() : d200UpTopic(request.gatewaySn()));
+        gateway.setSubscribeTopic(StringUtils.hasText(request.subscribeTopic()) ? request.subscribeTopic() : d200DownTopic(request.gatewaySn()));
+        gateway.setMqttVersion(StringUtils.hasText(request.mqttVersion()) ? request.mqttVersion() : "3.1.1");
+        gateway.setQos(request.qos() == null ? 1 : request.qos());
+        gateway.setKeepalive(request.keepalive() == null ? 60 : request.keepalive());
+        gateway.setTlsEnabled(Boolean.TRUE.equals(request.tlsEnabled()));
+        gateway.setRemoteConfigSupported(request.remoteConfigSupported() == null || request.remoteConfigSupported());
         gateway.setFirmwareVersion(request.firmwareVersion());
         gateway.setLatitude(request.latitude());
         gateway.setLongitude(request.longitude());
@@ -134,8 +145,10 @@ public class GatewayService {
         gateway.setProvince(request.province());
         gateway.setCity(request.city());
         gateway.setDistrict(request.district());
+        gateway.setLocationSource(StringUtils.hasText(request.locationSource()) ? request.locationSource() : "manual");
         if (request.latitude() != null || request.longitude() != null || StringUtils.hasText(request.address())) {
             gateway.setLocationUpdatedAt(OffsetDateTime.now());
+            gateway.setLastLocationTime(OffsetDateTime.now());
         }
         gateway.setRemark(request.remark());
     }
@@ -183,7 +196,11 @@ public class GatewayService {
                         cb.like(root.get("gatewaySn"), like),
                         cb.like(root.get("gatewayName"), like),
                         cb.like(root.get("imei"), like),
+                        cb.like(root.get("iccid"), like),
+                        cb.like(root.get("mqttClientId"), like),
                         cb.like(root.get("mqttUsername"), like),
+                        cb.like(root.get("publishTopic"), like),
+                        cb.like(root.get("subscribeTopic"), like),
                         cb.like(root.get("address"), like),
                         cb.like(root.get("city"), like),
                         cb.like(root.get("district"), like)
@@ -191,5 +208,13 @@ public class GatewayService {
             }
             return cb.and(predicates.toArray(Predicate[]::new));
         };
+    }
+
+    private String d200UpTopic(String gatewaySn) {
+        return "iot/d200/" + gatewaySn + "/up";
+    }
+
+    private String d200DownTopic(String gatewaySn) {
+        return "iot/d200/" + gatewaySn + "/down";
     }
 }

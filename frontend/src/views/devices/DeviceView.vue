@@ -21,10 +21,16 @@
       <el-table-column prop="customerName" label="客户" min-width="140"><template #default="{ row }">{{ textOrDash(row.customerName) }}</template></el-table-column>
       <el-table-column prop="projectName" label="项目" min-width="140"><template #default="{ row }">{{ textOrDash(row.projectName) }}</template></el-table-column>
       <el-table-column prop="installLocation" label="设备位置" min-width="160"><template #default="{ row }">{{ textOrDash(row.installLocation) }}</template></el-table-column>
-      <el-table-column label="地图坐标" min-width="190"><template #default="{ row }">{{ coordinateText(row) }}</template></el-table-column>
+      <el-table-column label="地图坐标" min-width="220">
+        <template #default="{ row }">
+          <el-button :icon="MapLocation" link type="primary" @click="openLocation(row)">
+            {{ coordinateText(row) }}
+          </el-button>
+        </template>
+      </el-table-column>
       <el-table-column prop="address" label="地址" min-width="220"><template #default="{ row }">{{ textOrDash(row.address) }}</template></el-table-column>
       <el-table-column prop="status" label="状态" min-width="100"><template #default="{ row }"><el-tag :type="statusTag(row.status)" effect="dark">{{ statusLabel(row.status) }}</el-tag></template></el-table-column>
-      <el-table-column label="操作" fixed="right" width="150"><template #default="{ row }"><el-button link type="primary" @click="openEdit(row)">编辑</el-button><el-button link type="danger" @click="remove(row)">删除</el-button></template></el-table-column>
+      <el-table-column label="操作" fixed="right" width="210"><template #default="{ row }"><el-button :icon="MapLocation" link type="primary" @click="openLocation(row)">位置</el-button><el-button link type="primary" @click="openEdit(row)">编辑</el-button><el-button link type="danger" @click="remove(row)">删除</el-button></template></el-table-column>
     </el-table>
 
     <div class="pager"><el-pagination v-model:current-page="query.page" v-model:page-size="query.size" background layout="total, sizes, prev, pager, next" :page-sizes="[10, 20, 50]" :total="total" @current-change="loadData" @size-change="loadData" /></div>
@@ -48,20 +54,24 @@
       </el-form>
       <template #footer><el-button @click="dialogVisible = false">取消</el-button><el-button type="primary" :loading="saving" @click="submit">保存</el-button></template>
     </el-dialog>
+    <DeviceLocationDialog v-model="locationVisible" :device="selectedDevice" @saved="loadData" />
   </section>
 </template>
 
 <script setup lang="ts">
-import { Plus, Search } from '@element-plus/icons-vue'
+import { MapLocation, Plus, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 import { customerApi, deviceApi, gatewayApi, projectApi } from '@/api/business'
 import type { Customer, Device, Gateway, Project } from '@/types/business'
 import { textOrDash } from '@/utils/format'
+import DeviceLocationDialog from '@/components/DeviceLocationDialog.vue'
 
 const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)
+const locationVisible = ref(false)
+const selectedDevice = ref<Device | null>(null)
 const formRef = ref<FormInstance>()
 const records = ref<Device[]>([])
 const customers = ref<Customer[]>([])
@@ -79,8 +89,9 @@ const rules: FormRules = {
   deviceName: [{ required: true, message: '请输入设备名称', trigger: 'blur' }]
 }
 function coordinateText(row: Device) {
-  return row.longitude != null && row.latitude != null ? `${row.longitude}, ${row.latitude}` : '-'
+  return row.longitude != null && row.latitude != null ? `${row.longitude}, ${row.latitude}` : '查看/设置位置'
 }
+function openLocation(row: Device) { selectedDevice.value = row; locationVisible.value = true }
 function statusLabel(value: string) {
   return { online: '在线', offline: '离线', alarm: '告警', maintenance: '维护', disabled: '禁用' }[value] || value
 }

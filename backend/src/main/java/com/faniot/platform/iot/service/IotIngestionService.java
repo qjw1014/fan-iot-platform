@@ -71,6 +71,17 @@ public class IotIngestionService {
         if (!StringUtils.hasText(gateway.getGatewayName())) {
             gateway.setGatewayName(request.gatewayId());
         }
+        if (!StringUtils.hasText(gateway.getGatewayModel())) {
+            gateway.setGatewayModel("D200");
+        }
+        gateway.setMqttClientId(request.gatewaySn());
+        gateway.setPublishTopic("iot/d200/" + request.gatewaySn() + "/up");
+        gateway.setSubscribeTopic("iot/d200/" + request.gatewaySn() + "/down");
+        gateway.setMqttVersion("3.1.1");
+        gateway.setQos(1);
+        gateway.setKeepalive(60);
+        gateway.setTlsEnabled(false);
+        gateway.setRemoteConfigSupported(true);
         gateway.setActivationStatus("active");
         gateway.setOnlineStatus("online");
         gateway.setMqttUsername(request.mqttUsername());
@@ -83,7 +94,7 @@ public class IotIngestionService {
                 saved.getGatewaySn(),
                 saved.getActivationStatus(),
                 saved.getMqttUsername(),
-                "iot/gateway/" + saved.getGatewayId() + "/telemetry"
+                saved.getPublishTopic()
         );
     }
 
@@ -129,6 +140,10 @@ public class IotIngestionService {
             throw new BusinessException("MQTT密码不正确");
         }
         return gateway;
+    }
+
+    public void ingestStandardPoint(Gateway gateway, TelemetryPointRequest point, OffsetDateTime receivedAt) {
+        savePoint(gateway, point, receivedAt);
     }
 
     private void savePoint(Gateway gateway, TelemetryPointRequest point, OffsetDateTime receivedAt) {

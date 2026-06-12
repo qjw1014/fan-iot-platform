@@ -1,0 +1,125 @@
+services:
+  frontend:
+    build:
+      context: ../../frontend
+    container_name: fan-iot-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    logging: &default-logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backend:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile.prod
+    container_name: fan-iot-backend
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-120}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ADMIN_REAL_NAME: ${ADMIN_REAL_NAME:-系统管理员}
+      MQTT_ENABLED: "true"
+      MQTT_BROKER_URL: tcp://mqtt:1883
+      MQTT_CLIENT_ID: fan-iot-platform-backend
+      MQTT_USERNAME: ${MQTT_USERNAME}
+      MQTT_PASSWORD: ${MQTT_PASSWORD}
+      MQTT_TELEMETRY_TOPIC: iot/d200/+/up
+      COMMUNICATION_OFFLINE_TIMEOUT_SECONDS: ${COMMUNICATION_OFFLINE_TIMEOUT_SECONDS:-180}
+      COMMUNICATION_STATUS_CHECK_INTERVAL_MS: ${COMMUNICATION_STATUS_CHECK_INTERVAL_MS:-30000}
+      LBS_ENABLED: ${LBS_ENABLED:-false}
+      LBS_PROVIDER: ${LBS_PROVIDER:-amap}
+      LBS_BASE_URL: ${LBS_BASE_URL:-https://restapi.amap.com/v5/position/IoT}
+      LBS_API_KEY: ${LBS_API_KEY:-}
+      LBS_DEFAULT_MCC: ${LBS_DEFAULT_MCC:-460}
+      LBS_DEFAULT_MNC: ${LBS_DEFAULT_MNC:-3}
+      LBS_NETWORK: ${LBS_NETWORK:-GSM}
+      LBS_SIGNAL: ${LBS_SIGNAL:--99}
+      LOGGING_LEVEL_COM_FANIOT_PLATFORM: INFO
+      TZ: Asia/Shanghai
+    expose:
+      - "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 45s
+    logging: *default-logging
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: fan-iot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: Asia/Shanghai
+    expose:
+      - "5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging: *default-logging
+
+  redis:
+    image: redis:7-alpine
+    container_name: fan-iot-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    expose:
+      - "6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging: *default-logging
+
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: fan-iot-mqtt
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./passwd:/mosquitto/config/passwd:ro
+      - mqtt_data:/mosquitto/data
+      - mqtt_log:/mosquitto/log
+    logging: *default-logging
+
+volumes:
+  postgres_data:
+  redis_data:
+  mqtt_data:
+  mqtt_log:

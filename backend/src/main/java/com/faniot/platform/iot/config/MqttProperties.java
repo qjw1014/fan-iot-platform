@@ -10,7 +10,7 @@ public class MqttProperties {
     private String clientId = "fan-iot-platform-backend";
     private String username;
     private String password;
-    private String telemetryTopic = "iot/gateway/+/telemetry";
+    private String telemetryTopic = "iot/d200/+/up";
 
     public boolean isEnabled() {
         return enabled;
