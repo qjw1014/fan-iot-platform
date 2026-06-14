@@ -1,63 +1,146 @@
 <template>
-  <section class="management-page panel">
-    <div class="toolbar">
-      <div>
-        <div class="panel-title">系统设置</div>
-        <p>查看平台运行与操作日志，支撑审计和故障排查</p>
+  <div class="settings-page">
+    <a-card :bordered="false">
+      <div class="page-heading">
+        <div>
+          <h2>系统设置</h2>
+          <p>配置当前浏览器中的平台界面偏好</p>
+        </div>
+        <a-tag color="processing">自动保存</a-tag>
       </div>
-      <div class="actions">
-        <el-select v-model="query.logLevel" clearable placeholder="日志级别" @change="loadData">
-          <el-option label="调试" value="debug" />
-          <el-option label="信息" value="info" />
-          <el-option label="警告" value="warn" />
-          <el-option label="错误" value="error" />
-        </el-select>
-        <el-input v-model="query.module" clearable placeholder="模块" @keyup.enter="loadData" />
-        <el-input v-model="query.keyword" clearable placeholder="搜索操作/内容" @keyup.enter="loadData" />
-        <el-button :icon="Search" @click="loadData">查询</el-button>
-      </div>
-    </div>
+    </a-card>
 
-    <el-table v-loading="loading" :data="records" class="data-table" height="calc(100vh - 300px)">
-      <el-table-column prop="logLevel" label="级别" min-width="90"><template #default="{ row }"><el-tag :type="levelTag(row.logLevel)" effect="dark">{{ levelLabel(row.logLevel) }}</el-tag></template></el-table-column>
-      <el-table-column prop="logType" label="类型" min-width="110" />
-      <el-table-column prop="module" label="模块" min-width="130"><template #default="{ row }">{{ textOrDash(row.module) }}</template></el-table-column>
-      <el-table-column prop="operation" label="操作" min-width="130"><template #default="{ row }">{{ textOrDash(row.operation) }}</template></el-table-column>
-      <el-table-column prop="message" label="内容" min-width="320" />
-      <el-table-column prop="createdAt" label="时间" min-width="170"><template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template></el-table-column>
-    </el-table>
+    <a-card title="界面主题" :bordered="false">
+      <a-form class="settings-form" layout="vertical">
+        <a-form-item label="主题模式">
+          <a-radio-group v-model:value="themeStore.current" button-style="solid">
+            <a-radio-button value="light">
+              <BulbOutlined />
+              明亮主题
+            </a-radio-button>
+            <a-radio-button value="dark">
+              <BgColorsOutlined />
+              暗色主题
+            </a-radio-button>
+          </a-radio-group>
+          <div class="setting-help">选择后立即应用，并自动保存在当前浏览器中。</div>
+        </a-form-item>
 
-    <div class="pager"><el-pagination v-model:current-page="query.page" v-model:page-size="query.size" background layout="total, sizes, prev, pager, next" :page-sizes="[10, 20, 50]" :total="total" @current-change="loadData" @size-change="loadData" /></div>
-  </section>
+        <a-divider />
+
+        <a-form-item label="暗色模式">
+          <div class="switch-row">
+            <div>
+              <strong>{{ darkModeEnabled ? '暗色主题已启用' : '当前使用明亮主题' }}</strong>
+              <span>此开关与上方主题模式使用同一项持久化设置。</span>
+            </div>
+            <a-switch
+              v-model:checked="darkModeEnabled"
+              checked-children="开"
+              un-checked-children="关"
+            />
+          </div>
+        </a-form-item>
+      </a-form>
+    </a-card>
+
+    <a-card title="当前配置" :bordered="false">
+      <a-descriptions :column="1" bordered size="small">
+        <a-descriptions-item label="当前主题">
+          <a-tag :color="themeStore.isDark ? 'blue' : 'gold'">
+            {{ themeStore.isDark ? '暗色主题' : '明亮主题' }}
+          </a-tag>
+        </a-descriptions-item>
+        <a-descriptions-item label="保存位置">当前浏览器 localStorage</a-descriptions-item>
+        <a-descriptions-item label="生效方式">切换后立即生效</a-descriptions-item>
+      </a-descriptions>
+    </a-card>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { Search } from '@element-plus/icons-vue'
-import { onMounted, reactive, ref } from 'vue'
-import { systemLogApi } from '@/api/business'
-import type { SystemLog } from '@/types/business'
-import { formatDateTime, textOrDash } from '@/utils/format'
+import { BgColorsOutlined, BulbOutlined } from '@ant-design/icons-vue'
+import { computed } from 'vue'
 
-const loading = ref(false)
-const records = ref<SystemLog[]>([])
-const total = ref(0)
-const query = reactive({ keyword: '', logLevel: '', module: '', page: 1, size: 10 })
+import { useThemeStore } from '@/stores/theme'
 
-function levelLabel(value: string) {
-  return { debug: '调试', info: '信息', warn: '警告', error: '错误' }[value] || value
+const themeStore = useThemeStore()
+const darkModeEnabled = computed({
+  get: () => themeStore.isDark,
+  set: (enabled: boolean) => themeStore.setTheme(enabled ? 'dark' : 'light')
+})
+</script>
+
+<style scoped>
+.settings-page {
+  display: grid;
+  gap: 16px;
+  max-width: 980px;
 }
-function levelTag(value: string) {
-  return value === 'error' ? 'danger' : value === 'warn' ? 'warning' : value === 'info' ? 'success' : 'info'
+
+.page-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
 }
-async function loadData() {
-  loading.value = true
-  try {
-    const page = await systemLogApi.page(query)
-    records.value = page.records
-    total.value = page.total
-  } finally {
-    loading.value = false
+
+.page-heading h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.page-heading p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.settings-form {
+  max-width: 680px;
+}
+
+.setting-help {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-strong);
+}
+
+.switch-row strong,
+.switch-row span {
+  display: block;
+}
+
+.switch-row strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.switch-row span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .page-heading,
+  .switch-row {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
-onMounted(loadData)
-</script>
+</style>

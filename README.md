@@ -12,7 +12,7 @@ PostgreSQL、Redis、Spring Boot 均不直接暴露公网。详细命令见
 ## 技术栈
 
 - 后端：Spring Boot 3、Java 17、Maven
-- 前端：Vue 3、TypeScript、Vite、Element Plus、Pinia、Vue Router、ECharts
+- 前端：Vue 3、TypeScript、Vite、Ant Design Vue、Pinia、Vue Router、ECharts
 - 数据库：PostgreSQL
 - 缓存：Redis
 - MQTT Broker：Mosquitto 或 EMQX
@@ -339,6 +339,15 @@ mvn clean package
 cd frontend
 npm run build
 ```
+
+## 前端界面与主题
+
+- 主框架使用 Ant Design Vue `Layout`、`Menu` 和 `SubMenu`，首页默认进入 `/dashboard`。
+- 左侧菜单按首页仪表盘、资产中心、监控中心、开放能力、系统管理分组，并支持折叠和路由高亮。
+- 明亮主题侧重实时监控和设备状态，暗色主题侧重运维工作台；可在“系统管理 > 系统设置”中切换。
+- 登录页采用工业风机设备主视觉与明亮表单双栏布局，支持记住账号、密码显隐、回车登录和移动端单栏适配。
+- 资产中心、监控中心、开放能力和系统管理页面已统一为 Ant Design Vue 风格，D200 专项路由继续保留。
+
 ## 通信在线状态
 
 - 盒子在线状态由平台最近一次收到 MQTT 或 HTTP 上行数据的时间自动维护。

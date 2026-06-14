@@ -2,7 +2,7 @@
   <section class="placeholder panel">
     <div class="panel-title">{{ route.meta.title }}</div>
     <div class="placeholder-body">
-      <el-empty description="当前阶段仅完成前端基础框架" />
+      <a-empty description="当前阶段仅完成前端基础框架" />
     </div>
   </section>
 </template>

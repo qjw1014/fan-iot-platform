@@ -1,5 +1,5 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
-import { ElMessage } from 'element-plus'
+import { message as antMessage } from 'ant-design-vue'
 
 import router from '@/router'
 import { useAuthStore } from '@/stores/auth'
@@ -22,19 +22,27 @@ request.interceptors.response.use(
   (response) => {
     const body = response.data as ApiResponse<unknown>
     if (typeof body?.code === 'number' && body.code !== 0) {
-      ElMessage.error(body.message || '请求失败')
+      antMessage.error(body.message || '请求失败')
       return Promise.reject(new Error(body.message || '请求失败'))
     }
     return response
   },
   async (error: AxiosError<ApiResponse<unknown>>) => {
-    const message = error.response?.data?.message || error.message || '网络异常'
+    const responseMessage =
+      error.response?.data && typeof error.response.data === 'object'
+        ? error.response.data.message
+        : ''
+    const message =
+      responseMessage ||
+      (error.response?.status === 500
+        ? '后端服务暂不可用，请检查 Docker 与后端服务状态'
+        : error.message || '网络异常')
     if (error.response?.status === 401) {
       const authStore = useAuthStore()
       authStore.logout()
       await router.replace('/login')
     }
-    ElMessage.error(message)
+    antMessage.error(message)
     return Promise.reject(error)
   }
 )

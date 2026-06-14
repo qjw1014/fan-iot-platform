@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" title="设备位置" width="920px" class="device-location-dialog" destroy-on-close>
+  <a-modal v-model:open="visible" title="设备位置" width="920px" class="device-location-dialog" destroy-on-close>
     <div class="location-layout">
       <div class="map-area">
         <iframe
@@ -9,54 +9,52 @@
           title="设备地图"
           loading="lazy"
         />
-        <el-empty v-else description="暂无定位坐标，请先维护安装位置或获取盒子基站定位" />
+        <a-empty v-else description="暂无定位坐标，请先维护安装位置或获取盒子基站定位" />
       </div>
 
       <aside class="location-panel">
         <div class="device-title">{{ location.deviceName || device?.deviceName }}</div>
         <div class="location-meta">
           <span>定位来源</span>
-          <el-tag :type="location.locationSource === 'lbs' ? 'warning' : 'primary'" effect="dark">
+          <a-tag :color="location.locationSource === 'lbs' ? 'warning' : 'processing'">
             {{ sourceLabel }}
-          </el-tag>
+          </a-tag>
         </div>
         <div class="location-meta">
           <span>最后定位</span>
           <strong>{{ formatDateTime(location.lastLocationTime) }}</strong>
         </div>
 
-        <el-form label-position="top">
+        <a-form layout="vertical">
           <div class="coordinate-grid">
-            <el-form-item label="经度">
-              <el-input-number
-                v-model="form.longitude"
+            <a-form-item label="经度">
+              <a-input-number
+                v-model:value="form.longitude"
                 :min="-180"
                 :max="180"
                 :precision="7"
                 :step="0.000001"
-                controls-position="right"
               />
-            </el-form-item>
-            <el-form-item label="纬度">
-              <el-input-number
-                v-model="form.latitude"
+            </a-form-item>
+            <a-form-item label="纬度">
+              <a-input-number
+                v-model:value="form.latitude"
                 :min="-90"
                 :max="90"
                 :precision="7"
                 :step="0.000001"
-                controls-position="right"
               />
-            </el-form-item>
+            </a-form-item>
           </div>
-          <el-form-item label="安装位置">
-            <el-input v-model="form.installLocation" placeholder="例如：一号车间东侧风机房" />
-          </el-form-item>
-          <el-form-item label="详细地址">
-            <el-input v-model="form.address" placeholder="请输入设备安装地址" />
-          </el-form-item>
-        </el-form>
+          <a-form-item label="安装位置">
+            <a-input v-model:value="form.installLocation" placeholder="例如：一号车间东侧风机房" />
+          </a-form-item>
+          <a-form-item label="详细地址">
+            <a-input v-model:value="form.address" placeholder="请输入设备安装地址" />
+          </a-form-item>
+        </a-form>
 
-        <el-alert
+        <a-alert
           v-if="location.locationSource === 'lbs'"
           title="当前显示盒子基站定位，精度通常低于人工安装位置"
           type="warning"
@@ -67,16 +65,19 @@
     </div>
 
     <template #footer>
-      <el-button v-if="hasCoordinate" :icon="Position" @click="openExternalMap">在百度地图中打开</el-button>
-      <el-button @click="visible = false">关闭</el-button>
-      <el-button type="primary" :loading="saving" @click="saveLocation">保存人工位置</el-button>
+      <a-button v-if="hasCoordinate" @click="openExternalMap">
+        <template #icon><EnvironmentOutlined /></template>
+        在百度地图中打开
+      </a-button>
+      <a-button @click="visible = false">关闭</a-button>
+      <a-button type="primary" :loading="saving" @click="saveLocation">保存人工位置</a-button>
     </template>
-  </el-dialog>
+  </a-modal>
 </template>
 
 <script setup lang="ts">
-import { Position } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { EnvironmentOutlined } from '@ant-design/icons-vue'
+import { message } from 'ant-design-vue'
 import { computed, reactive, ref, watch } from 'vue'
 import { deviceApi } from '@/api/business'
 import type { Device, DeviceLocation } from '@/types/business'
@@ -117,29 +118,35 @@ watch(
   () => [props.modelValue, props.device?.deviceId],
   async ([open]) => {
     if (!open || !props.device) return
-    const data = await deviceApi.location(props.device.deviceId)
-    Object.assign(location, data)
-    Object.assign(form, {
-      longitude: data.longitude,
-      latitude: data.latitude,
-      installLocation: data.installLocation || '',
-      address: data.address || ''
-    })
+    try {
+      const data = await deviceApi.location(props.device.deviceId)
+      Object.assign(location, data)
+      Object.assign(form, {
+        longitude: data.longitude,
+        latitude: data.latitude,
+        installLocation: data.installLocation || '',
+        address: data.address || ''
+      })
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '设备位置加载失败')
+    }
   }
 )
 
 async function saveLocation() {
   if (!props.device) return
   if ((form.longitude == null) !== (form.latitude == null)) {
-    ElMessage.warning('经度和纬度需要同时填写')
+    message.warning('经度和纬度需要同时填写')
     return
   }
   saving.value = true
   try {
     const data = await deviceApi.updateLocation(props.device.deviceId, form)
     Object.assign(location, data)
-    ElMessage.success('设备位置已保存')
+    message.success('设备位置已保存')
     emit('saved')
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '设备位置保存失败')
   } finally {
     saving.value = false
   }
@@ -203,11 +210,11 @@ function openExternalMap() {
   gap: 10px;
   margin-top: 16px;
 }
-.coordinate-grid :deep(.el-input-number) {
+.coordinate-grid :deep(.ant-input-number) {
   width: 100%;
 }
 @media (max-width: 760px) {
-  :global(.device-location-dialog) {
+  :global(.device-location-dialog.ant-modal) {
     width: calc(100vw - 24px) !important;
     margin-top: 12px !important;
   }
