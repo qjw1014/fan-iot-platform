@@ -14,6 +14,9 @@ public record LbsLocationVO(
         BigDecimal longitude,
         Integer accuracy,
         String address,
+        String province,
+        String city,
+        String district,
         String locationSource,
         boolean gatewayLocationUpdated,
         OffsetDateTime locatedAt

@@ -285,6 +285,9 @@ export interface LbsLocationResult {
   longitude: number
   accuracy?: number
   address?: string
+  province?: string
+  city?: string
+  district?: string
   locationSource: 'lbs'
   gatewayLocationUpdated: boolean
   locatedAt: string

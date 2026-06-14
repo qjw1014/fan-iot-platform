@@ -107,15 +107,18 @@
             {{ formatDateTime(record.lastSeenAt) }}
           </template>
           <template v-else-if="column.key === 'location'">
-            <div class="table-stack">
-              <span>{{ textOrDash(locationText(record)) }}</span>
-              <small>
-                <a-tag :color="locationColor(record.locationSource)">
-                  {{ locationSourceLabel(record.locationSource) }}
-                </a-tag>
-                {{ formatDateTime(record.lastLocationTime) }}
-              </small>
-            </div>
+            <button class="location-link" type="button" @click="openLbs(record)">
+              <EnvironmentOutlined />
+              <div class="table-stack">
+                <span>{{ textOrDash(locationText(record)) }}</span>
+                <small>
+                  <a-tag :color="locationColor(record.locationSource)">
+                    {{ locationSourceLabel(record.locationSource) }}
+                  </a-tag>
+                  {{ formatDateTime(record.lastLocationTime) }}
+                </small>
+              </div>
+            </button>
           </template>
           <template v-else-if="column.key === 'remoteConfig'">
             <div class="table-stack">
@@ -399,6 +402,16 @@
           <a-descriptions-item label="备注">{{ textOrDash(selectedGateway.remark) }}</a-descriptions-item>
         </a-descriptions>
 
+        <AmapLocationMap
+          v-if="selectedGateway.longitude != null && selectedGateway.latitude != null"
+          class="gateway-detail-map"
+          :longitude="selectedGateway.longitude"
+          :latitude="selectedGateway.latitude"
+          :title="selectedGateway.gatewayName"
+          :address="selectedGateway.address"
+          :height="280"
+        />
+
         <div class="drawer-actions">
           <a-button @click="openLbs(selectedGateway)">基站定位</a-button>
           <a-button type="primary" @click="openEdit(selectedGateway)">编辑盒子</a-button>
@@ -410,7 +423,7 @@
       v-model:open="lbsVisible"
       :confirm-loading="locating"
       title="D200 基站定位"
-      width="560px"
+      width="980px"
       ok-text="查询并更新位置"
       @ok="submitLbs"
     >
@@ -420,45 +433,86 @@
         :closable="false"
         show-icon
       />
-      <a-form class="lbs-form" :model="lbsForm" layout="vertical">
-        <a-form-item label="盒子 SN">
-          <a-input v-model:value="lbsForm.gatewaySn" disabled />
-        </a-form-item>
-        <a-row :gutter="16">
-          <a-col :span="12">
-            <a-form-item label="MCC">
-              <a-input-number v-model:value="lbsForm.mcc" :min="0" class="full-width" />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="MNC">
-              <a-input-number v-model:value="lbsForm.mnc" :min="0" class="full-width" />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="CID" required>
-              <a-input-number v-model:value="lbsForm.cid" :min="0" class="full-width" />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="LAC" required>
-              <a-input-number v-model:value="lbsForm.lac" :min="0" class="full-width" />
-            </a-form-item>
-          </a-col>
-        </a-row>
-      </a-form>
+      <div class="lbs-layout">
+        <a-form class="lbs-form" :model="lbsForm" layout="vertical">
+          <a-form-item label="AT+LBS 原始结果">
+            <a-input
+              v-model:value="lbsForm.raw"
+              allow-clear
+              placeholder="例如：+LBS:126226443,30476"
+              @press-enter="parseRawLbs"
+              @blur="parseRawLbs"
+            />
+            <span class="field-help">支持直接粘贴配置工具返回值，平台自动拆分 CID 和 LAC。</span>
+          </a-form-item>
+          <a-form-item label="盒子 SN">
+            <a-input v-model:value="lbsForm.gatewaySn" disabled />
+          </a-form-item>
+          <a-row :gutter="16">
+            <a-col :span="12">
+              <a-form-item label="MCC">
+                <a-input-number v-model:value="lbsForm.mcc" :min="0" class="full-width" />
+              </a-form-item>
+            </a-col>
+            <a-col :span="12">
+              <a-form-item label="MNC">
+                <a-input-number v-model:value="lbsForm.mnc" :min="0" class="full-width" />
+              </a-form-item>
+            </a-col>
+            <a-col :span="12">
+              <a-form-item label="CID" required>
+                <a-input-number v-model:value="lbsForm.cid" :min="0" class="full-width" />
+              </a-form-item>
+            </a-col>
+            <a-col :span="12">
+              <a-form-item label="LAC" required>
+                <a-input-number v-model:value="lbsForm.lac" :min="0" class="full-width" />
+              </a-form-item>
+            </a-col>
+          </a-row>
+          <a-descriptions v-if="lbsResult.latitude != null" :column="1" bordered size="small">
+            <a-descriptions-item label="定位来源">高德基站定位</a-descriptions-item>
+            <a-descriptions-item label="平台位置">
+              <a-tag :color="lbsResult.gatewayLocationUpdated ? 'success' : 'warning'">
+                {{ lbsResult.gatewayLocationUpdated ? '已更新为基站位置' : '保留人工维护位置' }}
+              </a-tag>
+            </a-descriptions-item>
+            <a-descriptions-item label="定位精度">
+              {{ lbsResult.accuracy != null ? `约 ${lbsResult.accuracy} 米` : '-' }}
+            </a-descriptions-item>
+            <a-descriptions-item label="省市区">
+              {{ [lbsResult.province, lbsResult.city, lbsResult.district].filter(Boolean).join(' ') || '-' }}
+            </a-descriptions-item>
+            <a-descriptions-item label="地址">{{ textOrDash(lbsResult.address) }}</a-descriptions-item>
+          </a-descriptions>
+        </a-form>
+
+        <AmapLocationMap
+          :longitude="lbsResult.longitude"
+          :latitude="lbsResult.latitude"
+          :title="lbsResult.gatewayName || lbsForm.gatewaySn"
+          :address="lbsResult.address"
+          :height="440"
+        />
+      </div>
     </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons-vue'
+import {
+  EnvironmentOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SearchOutlined
+} from '@ant-design/icons-vue'
 import type { FormInstance } from 'ant-design-vue'
 import { message } from 'ant-design-vue'
 import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 
 import { customerApi, gatewayApi, lbsApi, projectApi } from '@/api/business'
-import type { Customer, Gateway, Project } from '@/types/business'
+import AmapLocationMap from '@/components/AmapLocationMap.vue'
+import type { Customer, Gateway, LbsLocationResult, Project } from '@/types/business'
 import { formatDateTime, textOrDash } from '@/utils/format'
 
 const columns = [
@@ -515,11 +569,13 @@ const form = reactive<Partial<Gateway>>({})
 const lbsForm = reactive({
   gatewaySn: '',
   imei: '',
+  raw: '',
   mcc: 460,
   mnc: 3,
   lac: undefined as number | undefined,
   cid: undefined as number | undefined
 })
+const lbsResult = reactive<Partial<LbsLocationResult> & { gatewayName?: string }>({})
 
 const rules = {
   gatewayId: [{ required: true, message: '请输入盒子编号', trigger: 'blur' }],
@@ -761,15 +817,39 @@ function openLbs(row: Gateway) {
   Object.assign(lbsForm, {
     gatewaySn: row.gatewaySn,
     imei: row.imei || '',
+    raw: row.lbsCid != null && row.lbsLac != null ? `+LBS:${row.lbsCid},${row.lbsLac}` : '',
     mcc: row.lbsMcc ?? 460,
     mnc: row.lbsMnc ?? 3,
     lac: row.lbsLac,
     cid: row.lbsCid
   })
+  Object.assign(lbsResult, {
+    gatewayName: row.gatewayName,
+    gatewayId: row.gatewayId,
+    gatewaySn: row.gatewaySn,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    accuracy: row.lbsAccuracy,
+    address: row.address,
+    province: row.province,
+    city: row.city,
+    district: row.district,
+    locationSource: row.locationSource,
+    gatewayLocationUpdated: row.locationSource === 'lbs',
+    locatedAt: row.lastLocationTime
+  })
   lbsVisible.value = true
 }
 
+function parseRawLbs() {
+  const match = lbsForm.raw.trim().match(/(?:\+LBS:)?\s*(\d+)\s*,\s*(\d+)/i)
+  if (!match) return
+  lbsForm.cid = Number(match[1])
+  lbsForm.lac = Number(match[2])
+}
+
 async function submitLbs() {
+  parseRawLbs()
   if (lbsForm.cid == null || lbsForm.lac == null) {
     message.error('请输入 CID 和 LAC')
     return
@@ -785,8 +865,8 @@ async function submitLbs() {
       lac: lbsForm.lac,
       cid: lbsForm.cid
     })
+    Object.assign(lbsResult, result)
     message.success(`定位成功：${result.longitude}, ${result.latitude}`)
-    lbsVisible.value = false
     await loadData()
   } catch (error) {
     message.error(errorText(error, '基站定位失败'))
@@ -933,6 +1013,29 @@ onMounted(async () => {
   line-height: 24px;
 }
 
+.location-link {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 7px;
+  max-width: 240px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.location-link .table-stack {
+  min-width: 0;
+}
+
+.location-link .table-stack > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .table-card :deep(.ant-empty) {
   padding: 96px 0;
 }
@@ -984,7 +1087,18 @@ onMounted(async () => {
   margin-top: 18px;
 }
 
+.gateway-detail-map {
+  margin-top: 16px;
+}
+
 .lbs-form {
+  min-width: 0;
+}
+
+.lbs-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.8fr) minmax(0, 1.2fr);
+  gap: 16px;
   margin-top: 18px;
 }
 
@@ -1021,6 +1135,10 @@ onMounted(async () => {
 
   :deep(.ant-modal) {
     width: calc(100vw - 24px) !important;
+  }
+
+  .lbs-layout {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 </style>

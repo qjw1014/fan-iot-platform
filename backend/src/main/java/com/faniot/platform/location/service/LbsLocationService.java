@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.OffsetDateTime;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @Service
 public class LbsLocationService {
@@ -22,6 +24,7 @@ public class LbsLocationService {
     private final GatewayRepository gatewayRepository;
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
+    private final ConcurrentMap<String, AutomaticLocationAttempt> automaticAttempts = new ConcurrentHashMap<>();
 
     public LbsLocationService(
             LbsProperties properties,
@@ -91,9 +94,46 @@ public class LbsLocationService {
                 result.longitude(),
                 result.accuracy(),
                 result.address(),
+                result.province(),
+                result.city(),
+                result.district(),
                 "lbs",
                 !hasManualLocation,
                 locatedAt
+        );
+    }
+
+    public void locateFromTelemetry(LbsLocationRequest request) {
+        Gateway gateway = findGateway(request.gatewaySn(), request.imei());
+        int mcc = request.mcc() == null ? properties.defaultMcc() : request.mcc();
+        Integer mnc = request.mnc() == null ? properties.defaultMnc() : request.mnc();
+        if (mnc == null) {
+            throw new BusinessException("缺少MNC，请在报文中提供或配置LBS_DEFAULT_MNC");
+        }
+
+        AutomaticLocationAttempt next = new AutomaticLocationAttempt(
+                mcc,
+                mnc,
+                request.lac(),
+                request.cid(),
+                OffsetDateTime.now(),
+                false
+        );
+        AutomaticLocationAttempt previous = automaticAttempts.get(gateway.getGatewayId());
+        int intervalMinutes = previous != null && previous.success()
+                ? properties.refreshIntervalMinutes()
+                : Math.min(5, properties.refreshIntervalMinutes());
+        if (previous != null
+                && previous.sameCell(next)
+                && previous.at().isAfter(OffsetDateTime.now().minusMinutes(intervalMinutes))) {
+            return;
+        }
+
+        automaticAttempts.put(gateway.getGatewayId(), next);
+        locate(request);
+        automaticAttempts.put(
+                gateway.getGatewayId(),
+                new AutomaticLocationAttempt(mcc, mnc, request.lac(), request.cid(), OffsetDateTime.now(), true)
         );
     }
 
@@ -157,6 +197,23 @@ public class LbsLocationService {
             } catch (JsonProcessingException ex) {
                 return null;
             }
+        }
+    }
+
+    private record AutomaticLocationAttempt(
+            int mcc,
+            int mnc,
+            long lac,
+            long cid,
+            OffsetDateTime at,
+            boolean success
+    ) {
+        private boolean sameCell(AutomaticLocationAttempt other) {
+            return other != null
+                    && mcc == other.mcc
+                    && mnc == other.mnc
+                    && lac == other.lac
+                    && cid == other.cid;
         }
     }
 }

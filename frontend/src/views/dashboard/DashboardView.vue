@@ -96,6 +96,39 @@
       </a-card>
     </section>
 
+    <a-card class="location-card" title="设备位置分布" :bordered="false">
+      <template #extra>
+        <a-tag color="processing">{{ locatedDevices.length }} 台已定位</a-tag>
+      </template>
+      <div v-if="locatedDevices.length && selectedLocationDevice" class="location-overview">
+        <AmapLocationMap
+          :longitude="selectedLocationDevice.longitude"
+          :latitude="selectedLocationDevice.latitude"
+          :title="selectedLocationDevice.deviceName"
+          :address="selectedLocationDevice.address || selectedLocationDevice.installLocation"
+          :height="360"
+        />
+        <div class="location-device-list">
+          <button
+            v-for="device in locatedDevices"
+            :key="device.deviceId"
+            type="button"
+            :class="{ selected: selectedLocationDeviceId === device.deviceId }"
+            @click="selectedLocationDeviceId = device.deviceId"
+          >
+            <span>
+              <strong>{{ device.deviceName }}</strong>
+              <small>{{ device.address || device.installLocation || `${device.longitude}, ${device.latitude}` }}</small>
+            </span>
+            <a-tag :color="device.status === 'online' ? 'success' : device.status === 'alarm' ? 'error' : 'default'">
+              {{ statusLabel(device.status) }}
+            </a-tag>
+          </button>
+        </div>
+      </div>
+      <a-empty v-else description="暂无设备定位数据" />
+    </a-card>
+
     <section class="dashboard-grid lower-grid">
       <a-card class="trend-card" title="实时运行趋势" :bordered="false">
         <template #extra>
@@ -146,6 +179,7 @@ import { useRouter } from 'vue-router'
 import VChart from 'vue-echarts'
 
 import { alarmApi, deviceApi, monitorApi } from '@/api/business'
+import AmapLocationMap from '@/components/AmapLocationMap.vue'
 import { useThemeStore } from '@/stores/theme'
 import type { Alarm, Device, RealtimeMetric, RealtimeOverview, TelemetryHistoryPoint } from '@/types/business'
 import { formatDateTime } from '@/utils/format'
@@ -156,6 +190,7 @@ const router = useRouter()
 const themeStore = useThemeStore()
 const refreshing = ref(false)
 const selectedDeviceId = ref<string>()
+const selectedLocationDeviceId = ref<string>()
 const devices = ref<Device[]>([])
 const latestDevices = ref<RealtimeMetric[]>([])
 const alarms = ref<Alarm[]>([])
@@ -174,6 +209,13 @@ let refreshTimer: number | undefined
 
 const selectedMetric = computed(() =>
   latestDevices.value.find((item) => item.deviceId === selectedDeviceId.value)
+)
+const locatedDevices = computed(() =>
+  devices.value.filter((item) => item.longitude != null && item.latitude != null)
+)
+const selectedLocationDevice = computed(() =>
+  locatedDevices.value.find((item) => item.deviceId === selectedLocationDeviceId.value)
+    || locatedDevices.value[0]
 )
 
 const deviceOptions = computed(() =>
@@ -325,6 +367,9 @@ async function loadDashboard() {
     if (!selectedDeviceId.value) {
       selectedDeviceId.value = latestDevices.value[0]?.deviceId || devices.value[0]?.deviceId
     }
+    if (!locatedDevices.value.some((item) => item.deviceId === selectedLocationDeviceId.value)) {
+      selectedLocationDeviceId.value = locatedDevices.value[0]?.deviceId
+    }
     await loadHistory()
   } finally {
     refreshing.value = false
@@ -428,6 +473,59 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
   gap: 16px;
+}
+
+.location-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 0.72fr);
+  gap: 14px;
+}
+
+.location-device-list {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.location-device-list button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-strong);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.location-device-list button:hover,
+.location-device-list button.selected {
+  border-color: var(--primary);
+  background: var(--hover);
+}
+
+.location-device-list button > span {
+  min-width: 0;
+}
+
+.location-device-list strong,
+.location-device-list small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.location-device-list small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .device-matrix {
@@ -643,6 +741,10 @@ onUnmounted(() => {
   }
 
   .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .location-overview {
     grid-template-columns: 1fr;
   }
 

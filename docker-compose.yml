@@ -34,10 +34,12 @@ services:
       LBS_PROVIDER: ${LBS_PROVIDER:-cellocation}
       LBS_BASE_URL: ${LBS_BASE_URL:-http://api.cellocation.com:84/cell/}
       LBS_API_KEY: ${LBS_API_KEY:-}
+      LBS_MAP_BASE_URL: ${LBS_MAP_BASE_URL:-https://restapi.amap.com/v3/staticmap}
       LBS_DEFAULT_MCC: ${LBS_DEFAULT_MCC:-460}
       LBS_DEFAULT_MNC: ${LBS_DEFAULT_MNC:-3}
       LBS_NETWORK: ${LBS_NETWORK:-GSM}
       LBS_SIGNAL: ${LBS_SIGNAL:--99}
+      LBS_REFRESH_INTERVAL_MINUTES: ${LBS_REFRESH_INTERVAL_MINUTES:-30}
       TZ: ${TZ}
     ports:
       - "${SERVER_PORT}:8080"

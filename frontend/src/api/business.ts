@@ -145,5 +145,10 @@ export const d200Api = {
 
 export const lbsApi = {
   locate: (data: { gatewaySn?: string; imei?: string; mcc?: number; mnc?: number; lac: number; cid: number }) =>
-    getData(request.post<ApiResponse<LbsLocationResult>>('/api/iot/location/lbs', data))
+    getData(request.post<ApiResponse<LbsLocationResult>>('/api/iot/location/lbs', data)),
+  map: (params: { longitude: number; latitude: number; zoom?: number; width?: number; height?: number }) =>
+    request.get<Blob>('/api/iot/location/map', {
+      params: cleanParams(params),
+      responseType: 'blob'
+    })
 }

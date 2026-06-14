@@ -2,14 +2,13 @@
   <a-modal v-model:open="visible" title="设备位置" width="920px" class="device-location-dialog" destroy-on-close>
     <div class="location-layout">
       <div class="map-area">
-        <iframe
-          v-if="hasCoordinate"
-          :src="mapUrl"
-          class="map-frame"
-          title="设备地图"
-          loading="lazy"
+        <AmapLocationMap
+          :longitude="location.longitude"
+          :latitude="location.latitude"
+          :title="location.deviceName || device?.deviceName || '设备位置'"
+          :address="location.address || location.installLocation || ''"
+          :height="480"
         />
-        <a-empty v-else description="暂无定位坐标，请先维护安装位置或获取盒子基站定位" />
       </div>
 
       <aside class="location-panel">
@@ -67,7 +66,7 @@
     <template #footer>
       <a-button v-if="hasCoordinate" @click="openExternalMap">
         <template #icon><EnvironmentOutlined /></template>
-        在百度地图中打开
+        在高德地图中打开
       </a-button>
       <a-button @click="visible = false">关闭</a-button>
       <a-button type="primary" :loading="saving" @click="saveLocation">保存人工位置</a-button>
@@ -80,6 +79,7 @@ import { EnvironmentOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import { computed, reactive, ref, watch } from 'vue'
 import { deviceApi } from '@/api/business'
+import AmapLocationMap from '@/components/AmapLocationMap.vue'
 import type { Device, DeviceLocation } from '@/types/business'
 import { formatDateTime } from '@/utils/format'
 
@@ -107,13 +107,6 @@ const sourceLabel = computed(() => {
   if (!hasCoordinate.value) return '未定位'
   return location.locationSource === 'lbs' ? '盒子基站定位' : '人工安装位置'
 })
-const mapUrl = computed(() => {
-  if (!hasCoordinate.value) return ''
-  const title = encodeURIComponent(location.deviceName || props.device?.deviceName || '设备位置')
-  const content = encodeURIComponent(location.address || location.installLocation || '')
-  return `https://api.map.baidu.com/marker?location=${location.latitude},${location.longitude}&title=${title}&content=${content}&output=html&src=fan-iot-platform`
-})
-
 watch(
   () => [props.modelValue, props.device?.deviceId],
   async ([open]) => {
@@ -153,7 +146,10 @@ async function saveLocation() {
 }
 
 function openExternalMap() {
-  window.open(mapUrl.value, '_blank', 'noopener,noreferrer')
+  if (!hasCoordinate.value) return
+  const name = encodeURIComponent(location.deviceName || props.device?.deviceName || '设备位置')
+  const url = `https://uri.amap.com/marker?position=${location.longitude},${location.latitude}&name=${name}&src=fan-iot-platform&coordinate=gaode&callnative=0`
+  window.open(url, '_blank', 'noopener,noreferrer')
 }
 </script>
 
@@ -164,25 +160,13 @@ function openExternalMap() {
   gap: 16px;
 }
 .map-area {
-  display: grid;
   min-height: 480px;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #07111f;
-  place-items: stretch;
-}
-.map-frame {
-  width: 100%;
-  height: 100%;
-  min-height: 480px;
-  border: 0;
 }
 .location-panel {
   padding: 16px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: rgba(8, 20, 36, 0.72);
+  border-radius: 6px;
+  background: var(--panel-strong);
 }
 .device-title {
   margin-bottom: 16px;
@@ -225,7 +209,7 @@ function openExternalMap() {
     grid-template-columns: 1fr;
   }
   .map-area,
-  .map-frame {
+  .map-area :deep(.location-map) {
     min-height: 300px;
   }
 }

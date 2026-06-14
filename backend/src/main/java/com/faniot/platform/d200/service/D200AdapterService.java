@@ -430,7 +430,7 @@ public class D200AdapterService {
             return false;
         }
         try {
-            lbsLocationService.locate(new LbsLocationRequest(
+            lbsLocationService.locateFromTelemetry(new LbsLocationRequest(
                     gatewaySn,
                     imei,
                     values.mcc(),
@@ -446,6 +446,15 @@ public class D200AdapterService {
     }
 
     private LbsValues parseLbs(JsonNode root) {
+        LbsValues direct = parseLbsNode(root);
+        if (direct != null) {
+            return direct;
+        }
+        JsonNode data = root.get("data");
+        return data != null && data.isObject() ? parseLbsNode(data) : null;
+    }
+
+    private LbsValues parseLbsNode(JsonNode root) {
         JsonNode lbs = root.get("lbs");
         if (lbs != null && lbs.isObject()) {
             Long lac = longValue(lbs.get("lac"));

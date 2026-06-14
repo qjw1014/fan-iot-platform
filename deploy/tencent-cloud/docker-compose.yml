@@ -47,10 +47,12 @@ services:
       LBS_PROVIDER: ${LBS_PROVIDER:-amap}
       LBS_BASE_URL: ${LBS_BASE_URL:-https://restapi.amap.com/v5/position/IoT}
       LBS_API_KEY: ${LBS_API_KEY:-}
+      LBS_MAP_BASE_URL: ${LBS_MAP_BASE_URL:-https://restapi.amap.com/v3/staticmap}
       LBS_DEFAULT_MCC: ${LBS_DEFAULT_MCC:-460}
       LBS_DEFAULT_MNC: ${LBS_DEFAULT_MNC:-3}
       LBS_NETWORK: ${LBS_NETWORK:-GSM}
       LBS_SIGNAL: ${LBS_SIGNAL:--99}
+      LBS_REFRESH_INTERVAL_MINUTES: ${LBS_REFRESH_INTERVAL_MINUTES:-30}
       LOGGING_LEVEL_COM_FANIOT_PLATFORM: INFO
       TZ: Asia/Shanghai
     expose:

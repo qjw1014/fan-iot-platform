@@ -22,7 +22,9 @@ PostgreSQL、Redis、Spring Boot 均不直接暴露公网。详细命令见
 
 ### 设备地图与定位
 
-- 设备管理页可点击“位置”打开地图弹窗，维护设备安装地址和经纬度。
+- 设备管理页可点击“位置”打开高德小地图，支持缩放、刷新、跳转高德地图及维护人工安装位置。
+- 盒子管理页可直接粘贴 `AT+LBS` 返回值，定位成功后在弹窗和盒子详情中显示高德小地图。
+- 首页仪表盘展示已有真实坐标的设备分布，可切换查看设备位置。
 - 设备自身未维护坐标时，平台自动显示所属 D200 盒子的定位坐标。
 - 定位优先级为：设备人工安装位置 > D200 盒子基站定位。
 - 首页设备地图仅展示已有真实坐标的设备，不生成模拟坐标。
@@ -52,6 +54,9 @@ PostgreSQL、Redis、Spring Boot 均不直接暴露公网。详细命令见
   "lbs": "+LBS:144426439,21269"
 }
 ```
+
+`lbs`、`lac/cid` 或 `lbsResponse` 可位于报文根节点，也可位于 `data` 对象内。盒子持续上报同一基站时，
+平台默认 30 分钟内不重复调用高德定位；基站发生变化时立即重新定位，失败后 5 分钟允许重试。
 
 处理流程：
 
@@ -95,13 +100,17 @@ LBS_ENABLED=true
 LBS_PROVIDER=amap
 LBS_BASE_URL=https://restapi.amap.com/v5/position/IoT
 LBS_API_KEY=your_amap_web_service_key
+LBS_MAP_BASE_URL=https://restapi.amap.com/v3/staticmap
 LBS_DEFAULT_MCC=460
 LBS_DEFAULT_MNC=3
 LBS_NETWORK=GSM
 LBS_SIGNAL=-99
+LBS_REFRESH_INTERVAL_MINUTES=30
 ```
 
-`MNC=3` 仅适用于当前测试配置，正式部署应按实际 SIM 运营商填写。定位供应商不可用时，平台会记录失败日志，并保留原坐标。
+同一个高德 Web 服务 Key 用于智能硬件定位和后端静态地图代理。Key 只配置在服务器 `.env`，
+不会写入前端构建产物或通过浏览器请求直接暴露。`MNC=3` 仅适用于当前测试配置，
+正式部署应按实际 SIM 运营商填写。定位供应商不可用时，平台会记录失败日志，并保留原坐标。
 
 D200 最终按“串口 DTU + 4G MQTT 上报”接入：
 

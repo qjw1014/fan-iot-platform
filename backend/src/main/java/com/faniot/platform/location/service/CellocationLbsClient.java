@@ -96,34 +96,50 @@ public class CellocationLbsClient implements LbsProviderClient {
         try {
             body = restClient.post().uri(uri).retrieve().body(String.class);
         } catch (Exception ex) {
-            throw new BusinessException("高德基站定位服务调用失败：" + ex.getMessage());
+            throw new BusinessException("高德基站定位服务调用失败，请检查网络、Key权限和配额");
         }
         try {
-            JsonNode root = objectMapper.readTree(body);
-            if (!"1".equals(root.path("status").asText())) {
-                throw new BusinessException("高德基站定位失败：" + root.path("info").asText("未知错误"));
-            }
-            JsonNode position = root.path("position");
-            String[] coordinate = position.path("location").asText("").split(",");
-            if (coordinate.length != 2) {
-                throw new BusinessException("高德基站定位未返回有效坐标");
-            }
-            JsonNode component = position.path("addressComponent");
-            return new Result(
-                    new BigDecimal(coordinate[1]),
-                    new BigDecimal(coordinate[0]),
-                    position.path("radius").isMissingNode() ? null : position.path("radius").asInt(),
-                    firstText(position, "formatted_address", "desc"),
-                    firstText(component, "province"),
-                    firstText(component, "city"),
-                    firstText(component, "district"),
-                    body
-            );
+            return parseAmapResponse(body);
         } catch (BusinessException ex) {
             throw ex;
         } catch (Exception ex) {
             throw new BusinessException("高德基站定位响应无法解析");
         }
+    }
+
+    Result parseAmapResponse(String body) throws Exception {
+        JsonNode root = objectMapper.readTree(body);
+        if (!"1".equals(root.path("status").asText())) {
+            String info = root.path("info").asText("未知错误");
+            String infoCode = root.path("infocode").asText("");
+            throw new BusinessException("高德基站定位失败：" + info + (infoCode.isBlank() ? "" : "（" + infoCode + "）"));
+        }
+
+        JsonNode position = root.path("position");
+        String[] coordinate = position.path("location").asText("").split(",");
+        if (coordinate.length != 2) {
+            throw new BusinessException("高德基站定位未返回有效坐标");
+        }
+
+        JsonNode component = root.path("addressComponent");
+        if (component.isMissingNode() || component.isNull()) {
+            component = position.path("addressComponent");
+        }
+        String address = firstText(root, "formatted_address");
+        if (address == null) {
+            address = firstText(position, "formatted_address", "desc");
+        }
+
+        return new Result(
+                new BigDecimal(coordinate[1]),
+                new BigDecimal(coordinate[0]),
+                firstNullableInt(position, "radius"),
+                address,
+                firstText(component, "province"),
+                firstText(component, "city"),
+                firstText(component, "district"),
+                body
+        );
     }
 
     private int firstInt(JsonNode root, String... fields) {

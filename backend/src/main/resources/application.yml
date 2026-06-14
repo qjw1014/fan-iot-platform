@@ -74,10 +74,12 @@ app:
     provider: ${LBS_PROVIDER:cellocation}
     base-url: ${LBS_BASE_URL:http://api.cellocation.com:84/cell/}
     api-key: ${LBS_API_KEY:}
+    map-base-url: ${LBS_MAP_BASE_URL:https://restapi.amap.com/v3/staticmap}
     default-mcc: ${LBS_DEFAULT_MCC:460}
     default-mnc: ${LBS_DEFAULT_MNC:}
     network: ${LBS_NETWORK:GSM}
     signal: ${LBS_SIGNAL:-99}
+    refresh-interval-minutes: ${LBS_REFRESH_INTERVAL_MINUTES:30}
     connect-timeout-seconds: ${LBS_CONNECT_TIMEOUT_SECONDS:5}
     read-timeout-seconds: ${LBS_READ_TIMEOUT_SECONDS:8}
 
