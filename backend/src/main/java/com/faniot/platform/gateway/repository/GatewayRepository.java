@@ -13,6 +13,8 @@ public interface GatewayRepository extends JpaRepository<Gateway, Long>, JpaSpec
 
     Optional<Gateway> findByGatewaySn(String gatewaySn);
 
+    Optional<Gateway> findByMqttClientId(String mqttClientId);
+
     Optional<Gateway> findByImei(String imei);
 
     boolean existsByGatewayId(String gatewayId);

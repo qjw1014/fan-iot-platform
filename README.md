@@ -350,10 +350,12 @@ npm run build
 
 ## 通信在线状态
 
-- 盒子在线状态由平台最近一次收到 MQTT 或 HTTP 上行数据的时间自动维护。
-- 收到有效上行数据时，平台更新 `last_seen_at` 并将盒子标记为在线。
-- 默认连续 180 秒没有收到上行数据时，后台任务自动将盒子及其设备标记为离线。
+- 盒子在线状态由 MQTT 会话自动维护：D200 成功连接 Broker 后立即显示在线，不要求先接入风机或上传遥测数据。
+- MQTT Broker 通过 `$SYS/broker/log/#` 发布客户端连接与断开事件，平台使用 MQTT Client ID（默认等于盒子 SN）匹配盒子档案。
+- 已连接盒子的 `last_seen_at` 每 30 秒刷新；MQTT 主动断开、Keep Alive 超时或超过平台通信超时时间后自动显示离线。
+- HTTP 或 MQTT 遥测上报仍会更新盒子最后通信时间；设备在线状态继续由设备遥测数据维护。
+- 默认连续 180 秒没有有效会话或上行数据时，后台任务自动将盒子及其设备标记为离线。
 - 在线状态不可在盒子编辑页面人工修改。
 - `COMMUNICATION_OFFLINE_TIMEOUT_SECONDS` 用于调整离线超时时间。
 - `COMMUNICATION_STATUS_CHECK_INTERVAL_MS` 用于调整检测周期。
-- D200 应配置周期性数据或心跳上报；仅保持 MQTT TCP 连接但不发送业务报文时，平台仍会在超时后显示离线。
+- Mosquitto 必须启用 `log_dest topic`，本项目本地和腾讯云配置文件已默认启用。

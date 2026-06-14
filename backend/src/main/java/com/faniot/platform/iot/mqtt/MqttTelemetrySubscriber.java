@@ -24,18 +24,24 @@ public class MqttTelemetrySubscriber implements SmartLifecycle {
 
     private final MqttProperties properties;
     private final D200AdapterService d200AdapterService;
+    private final MqttGatewaySessionTracker sessionTracker;
     private volatile boolean running;
     private MqttClient client;
 
-    public MqttTelemetrySubscriber(MqttProperties properties, D200AdapterService d200AdapterService) {
+    public MqttTelemetrySubscriber(
+            MqttProperties properties,
+            D200AdapterService d200AdapterService,
+            MqttGatewaySessionTracker sessionTracker
+    ) {
         this.properties = properties;
         this.d200AdapterService = d200AdapterService;
+        this.sessionTracker = sessionTracker;
     }
 
     @Override
     public void start() {
         if (!properties.isEnabled()) {
-            log.info("MQTT接入未启用");
+            log.info("MQTT ingestion is disabled");
             return;
         }
         try {
@@ -43,12 +49,14 @@ public class MqttTelemetrySubscriber implements SmartLifecycle {
             client.setCallback(new MqttCallbackExtended() {
                 @Override
                 public void connectComplete(boolean reconnect, String serverURI) {
+                    sessionTracker.brokerConnected();
                     subscribe();
                 }
 
                 @Override
                 public void connectionLost(Throwable cause) {
-                    log.warn("MQTT连接断开：{}", cause.getMessage());
+                    sessionTracker.brokerDisconnected();
+                    log.warn("MQTT connection lost: {}", cause == null ? "unknown" : cause.getMessage());
                 }
 
                 @Override
@@ -63,10 +71,11 @@ public class MqttTelemetrySubscriber implements SmartLifecycle {
             });
             client.connect(connectOptions());
             running = true;
-            log.info("MQTT客户端已连接：{}", properties.getBrokerUrl());
+            log.info("MQTT client connected: {}", properties.getBrokerUrl());
         } catch (MqttException ex) {
             running = false;
-            log.error("MQTT客户端启动失败", ex);
+            sessionTracker.brokerDisconnected();
+            log.error("MQTT client failed to start", ex);
         }
     }
 
@@ -77,9 +86,10 @@ public class MqttTelemetrySubscriber implements SmartLifecycle {
                 client.disconnect();
                 client.close();
             } catch (MqttException ex) {
-                log.warn("MQTT客户端关闭失败：{}", ex.getMessage());
+                log.warn("MQTT client failed to close: {}", ex.getMessage());
             }
         }
+        sessionTracker.brokerDisconnected();
         running = false;
     }
 
@@ -105,20 +115,28 @@ public class MqttTelemetrySubscriber implements SmartLifecycle {
 
     private void subscribe() {
         try {
-            client.subscribe(properties.getTelemetryTopic(), 1);
-            log.info("MQTT已订阅D200上行主题：{}", properties.getTelemetryTopic());
+            client.subscribe(
+                    new String[]{properties.getTelemetryTopic(), properties.getSessionEventTopic()},
+                    new int[]{1, 0}
+            );
+            log.info("D200 telemetry topic subscribed: {}", properties.getTelemetryTopic());
+            log.info("MQTT broker session events subscribed: {}", properties.getSessionEventTopic());
         } catch (MqttException ex) {
-            log.error("MQTT订阅失败", ex);
+            log.error("MQTT subscription failed", ex);
         }
     }
 
     private void handleMessage(String topic, MqttMessage message) {
         try {
             String payload = new String(message.getPayload(), StandardCharsets.UTF_8);
+            if (topic.startsWith("$SYS/broker/log/")) {
+                sessionTracker.handleBrokerEvent(payload);
+                return;
+            }
             d200AdapterService.ingestMqtt(topic, message.getQos(), payload);
-            log.debug("D200 MQTT消息处理完成 topic={}", topic);
+            log.debug("D200 MQTT message processed: topic={}", topic);
         } catch (Exception ex) {
-            log.error("D200 MQTT消息处理失败 topic={}", topic, ex);
+            log.error("D200 MQTT message failed: topic={}", topic, ex);
         }
     }
 }

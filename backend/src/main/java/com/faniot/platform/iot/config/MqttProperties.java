@@ -11,6 +11,7 @@ public class MqttProperties {
     private String username;
     private String password;
     private String telemetryTopic = "iot/d200/+/up";
+    private String sessionEventTopic = "$SYS/broker/log/#";
 
     public boolean isEnabled() {
         return enabled;
@@ -58,5 +59,13 @@ public class MqttProperties {
 
     public void setTelemetryTopic(String telemetryTopic) {
         this.telemetryTopic = telemetryTopic;
+    }
+
+    public String getSessionEventTopic() {
+        return sessionEventTopic;
+    }
+
+    public void setSessionEventTopic(String sessionEventTopic) {
+        this.sessionEventTopic = sessionEventTopic;
     }
 }
