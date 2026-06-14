@@ -40,6 +40,7 @@ services:
       MQTT_USERNAME: ${MQTT_USERNAME}
       MQTT_PASSWORD: ${MQTT_PASSWORD}
       MQTT_TELEMETRY_TOPIC: iot/d200/+/up
+      MQTT_BROKER_LOG_PATH: /var/log/fan-iot-mqtt/mosquitto.log
       COMMUNICATION_OFFLINE_TIMEOUT_SECONDS: ${COMMUNICATION_OFFLINE_TIMEOUT_SECONDS:-180}
       COMMUNICATION_STATUS_CHECK_INTERVAL_MS: ${COMMUNICATION_STATUS_CHECK_INTERVAL_MS:-30000}
       LBS_ENABLED: ${LBS_ENABLED:-false}
@@ -54,6 +55,8 @@ services:
       TZ: Asia/Shanghai
     expose:
       - "8080"
+    volumes:
+      - mqtt_log:/var/log/fan-iot-mqtt:ro
     depends_on:
       postgres:
         condition: service_healthy

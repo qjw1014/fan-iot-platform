@@ -64,6 +64,8 @@ app:
     telemetry-topic: ${MQTT_TELEMETRY_TOPIC:iot/d200/+/up}
     session-event-topic: '${MQTT_SESSION_EVENT_TOPIC:$SYS/broker/log/#}'
     session-refresh-interval-ms: ${MQTT_SESSION_REFRESH_INTERVAL_MS:30000}
+    broker-log-path: ${MQTT_BROKER_LOG_PATH:}
+    broker-log-tail-bytes: ${MQTT_BROKER_LOG_TAIL_BYTES:16777216}
   communication:
     offline-timeout-seconds: ${COMMUNICATION_OFFLINE_TIMEOUT_SECONDS:180}
     status-check-interval-ms: ${COMMUNICATION_STATUS_CHECK_INTERVAL_MS:30000}

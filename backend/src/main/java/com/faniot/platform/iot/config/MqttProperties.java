@@ -12,6 +12,8 @@ public class MqttProperties {
     private String password;
     private String telemetryTopic = "iot/d200/+/up";
     private String sessionEventTopic = "$SYS/broker/log/#";
+    private String brokerLogPath;
+    private long brokerLogTailBytes = 16 * 1024 * 1024;
 
     public boolean isEnabled() {
         return enabled;
@@ -67,5 +69,21 @@ public class MqttProperties {
 
     public void setSessionEventTopic(String sessionEventTopic) {
         this.sessionEventTopic = sessionEventTopic;
+    }
+
+    public String getBrokerLogPath() {
+        return brokerLogPath;
+    }
+
+    public void setBrokerLogPath(String brokerLogPath) {
+        this.brokerLogPath = brokerLogPath;
+    }
+
+    public long getBrokerLogTailBytes() {
+        return brokerLogTailBytes;
+    }
+
+    public void setBrokerLogTailBytes(long brokerLogTailBytes) {
+        this.brokerLogTailBytes = brokerLogTailBytes;
     }
 }

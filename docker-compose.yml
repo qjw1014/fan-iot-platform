@@ -29,6 +29,7 @@ services:
       MQTT_BROKER_URL: tcp://mqtt:1883
       MQTT_CLIENT_ID: fan-iot-platform-backend
       MQTT_TELEMETRY_TOPIC: iot/d200/+/up
+      MQTT_BROKER_LOG_PATH: /var/log/fan-iot-mqtt/mosquitto.log
       LBS_ENABLED: ${LBS_ENABLED:-false}
       LBS_PROVIDER: ${LBS_PROVIDER:-cellocation}
       LBS_BASE_URL: ${LBS_BASE_URL:-http://api.cellocation.com:84/cell/}
@@ -47,6 +48,8 @@ services:
         condition: service_healthy
       mqtt:
         condition: service_started
+    volumes:
+      - mqtt_log:/var/log/fan-iot-mqtt:ro
 
   postgres:
     image: postgres:16-alpine
